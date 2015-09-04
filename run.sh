@@ -1,3 +1,3 @@
 #!/bin/sh
 
-/Users/petri/vice/xvic.app/Contents/MacOS/xvic main.prg 
+/Users/petri/vice/xvic.app/Contents/MacOS/xvic demons.prg 
