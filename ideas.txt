@@ -74,3 +74,44 @@ vic specs:
 
 misc:
 - only one level can be stored in memory, therefore can't go back to previously level
+
+
+random level generator pseudo code
+----------------------------------
+
+: clear screen
+for i=7680,8185 : poke i,160 : next
+for i=38400,38911 : poke i,0 : next
+
+; init walker
+x = 11
+y = 10
+dx = 1
+dy = 0
+c = 0
+goto turnrandom
+
+; move walker
+loop:
+poke 7680+y*22+x,32
+x = x + dx
+y = y + dy
+c = c + 1
+
+; are we done yet?
+if c = 250 then goto done
+
+; edge hit?
+if x = 1 or x = 20 or y = 2 or y = 20 then goto turn
+
+; turn randomly
+turnrandom:
+if rnd(0) > 0.3 then goto loop
+
+turn:
+t = -dx
+dx = dy
+dy = t
+goto loop
+
+done:
