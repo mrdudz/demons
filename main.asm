@@ -9,12 +9,13 @@
 	SCREEN_WIDTH	= 22
 	SCREEN_HEIGHT	= 23
 	ENEMY_COUNT	= 3
-	
+
 	; kernal routines
 	CHROUT		= $ffd2
 	PLOT		= $fff0
 	GETIN		= $ffe4
-	LINE_PTR	= $D1		; pointer to current line is stored in $d1-$d2
+	LINE_PTR	= $d1		; pointer to current line is stored in $d1-$d2
+	CURSOR_X	= $d3
 	CUR_COLOR	= $0286
 
 	; char codes
@@ -33,11 +34,15 @@
 	CHR_HOME	= 19
 	CHR_CLR_HOME	= 147
 	CHR_FLOOR	= 166
+	CHR_WALL	= 32
 	CHR_PLAYER	= 64
 	CHR_ENEMY	= 113
+	CHR_STAIRS	= 62
 
 	; screen codes
+	SCR_STAIRS	= 62
 	SCR_FLOOR	= 102
+	SCR_WALL	= 32
 
 	; zero page variables
 	PX		= $10
@@ -71,16 +76,11 @@ start:	;lda #8
 	;sta CUR_COLOR
 
 	jsr random_level
-	jsr init_player
-	jsr init_enemies
 
-	; draw message bar
-	ldx #0
-	ldy #0
-	jsr move
-        ldx #<text
-        ldy #>text
-        jsr print
+	; draw welcome message
+        ldx #<welcome
+        ldy #>welcome
+        jsr print_msg
 
 mainloop:
 	jsr waitkey
@@ -158,7 +158,10 @@ random_level:
 
 	jmp @loop
 
-@done:	rts
+@done:	jsr init_player
+	jsr init_enemies
+	jsr init_stairs
+	rts
 
 	;*****************************************************************
 	; initialize player
@@ -200,8 +203,12 @@ update_player:
 	jsr move
 	; check obstacle
 	lda (LINE_PTR),y
+	cmp #SCR_STAIRS
+	beq enter_stairs	; allow moving into stairs
+	cmp #SCR_WALL
+	beq @blocked
 	cmp #SCR_FLOOR
-	bne @blocked
+	bne player_attack
 
 	; move player to X,Y
 	sty PX			; store new pos
@@ -217,6 +224,48 @@ update_player:
 	rts
 
 	;*****************************************************************
+	; enter stairs
+	;*****************************************************************
+
+enter_stairs:
+	jsr random_level
+        ldx #<descend
+        ldy #>descend
+        jsr print_msg
+	rts
+
+	;*****************************************************************
+	; player attack, in: X,Y = target coordinates
+	;*****************************************************************
+
+player_attack:
+	jsr rand8
+	cmp #128
+	bcc @hit
+	ldx #<youmiss
+        ldy #>youmiss
+        jsr print_msg
+        rts
+@hit:	txa				; store X,Y
+	pha
+	tya
+	pha
+	ldx #<youhit
+	ldy #>youhit
+	jsr print_msg	
+	jsr waitkey
+	pla				; restore X,Y
+	tay
+	pla
+	tax
+	lda #CHR_FLOOR			; remove monster
+	jsr plot
+	ldx #<mondie
+	ldy #>mondie
+	jsr print_msg
+	rts
+
+	;*****************************************************************
 	; initialize enemies
 	;*****************************************************************
 
@@ -228,6 +277,16 @@ init_enemies:
 	jsr plot
 	dec $0
 	bne @loop
+	rts
+
+	;*****************************************************************
+	; initialize stairs
+	;*****************************************************************
+
+init_stairs:
+	jsr randomloc
+	lda #CHR_STAIRS
+	jsr plot
 	rts
 
 	;*****************************************************************
@@ -272,6 +331,24 @@ print:	stx $0
 @done:	rts
 
 	;*****************************************************************
+	; prints message at the top of the screen
+	; X,Y = address of text
+	;*****************************************************************
+
+print_msg:
+	lda #CHR_HOME
+	jsr CHROUT
+        jsr print
+        ; clear rest of the line
+        lda #32
+@cloop: ldx CURSOR_X
+	cpx #22
+        beq @done
+        jsr CHROUT
+        jmp @cloop
+@done:  rts
+
+	;*****************************************************************
 	; clears the screen
 	;*****************************************************************
 
@@ -299,7 +376,7 @@ delay:	;txa
 	;pha
 	;tya
 	;pha
-	ldy #$80
+	ldy #$ff
 @delay1:ldx #$ff
 @delay2:dex
 	bne @delay2
@@ -367,4 +444,8 @@ waitkey:jsr GETIN
 	; data
 	;*****************************************************************
 
-text:	.byte	CHR_BLUE,"DESCENDING...",0
+welcome:.byte	"DEMONS OF DEX",0
+descend:.byte	"DESCENDING...",0
+youhit:	.byte	"YOU HIT THE XXX!",0
+youmiss:.byte	"YOU MISS.",0
+mondie:	.byte	"THE XXX IS DEAD!",0
