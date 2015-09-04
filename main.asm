@@ -8,34 +8,43 @@
 	SCREEN 		= $1e00
 	SCREEN_WIDTH	= 22
 	SCREEN_HEIGHT	= 23
-
+	ENEMY_COUNT	= 3
+	
 	; kernal routines
 	CHROUT		= $ffd2
 	PLOT		= $fff0
 	GETIN		= $ffe4
 	LINE_PTR	= $D1		; pointer to current line is stored in $d1-$d2
+	CUR_COLOR	= $0286
 
 	; char codes
-	WHITE		= 5
-	RED		= 28
-	GREEN		= 30
-	BLUE		= 31
-	BLACK		= 144
-	PURPLE		= 156
-	YELLOW		= 158
-	CYAN		= 159
-	CURSOR_DOWN	= 17
-	CURSOR_UP	= 145
-	CURSOR_LEFT 	= 157
-	CURSOR_RIGHT	= 29
-	HOME		= 19
-	CLEAR_SCREEN	= 147
-	PLAYER		= 64
-	FLOOR		= 166
+	CHR_WHITE	= 5
+	CHR_RED		= 28
+	CHR_GREEN	= 30
+	CHR_BLUE	= 31
+	CHR_BLACK	= 144
+	CHR_PURPLE	= 156
+	CHR_YELLOW	= 158
+	CHR_CYAN	= 159
+	CHR_DOWN	= 17
+	CHR_UP		= 145
+	CHR_LEFT 	= 157
+	CHR_RIGHT	= 29
+	CHR_HOME	= 19
+	CHR_CLR_HOME	= 147
+	CHR_FLOOR	= 166
+	CHR_PLAYER	= 64
+	CHR_ENEMY	= 113
+
+	; screen codes
+	SCR_FLOOR	= 102
 
 	; zero page variables
 	PX		= $10
 	PY		= $11
+
+	; VIC registers
+	VIC_SCR_COLORS	= $900F
 
 	.byt $01,$10			; PRG file header (starting address of the program)
 
@@ -56,9 +65,14 @@ bend:	.word 0           		; end of program
 	; main program
 	;*****************************************************************
 
-start:
+start:	;lda #8
+	;sta VIC_SCR_COLORS
+	;lda #1
+	;sta CUR_COLOR
+
 	jsr random_level
 	jsr init_player
+	jsr init_enemies
 
 	; draw message bar
 	ldx #0
@@ -100,7 +114,7 @@ random_level:
 	bcc @turn
 
 	; plot
-@loop:	lda #FLOOR
+@loop:	lda #CHR_FLOOR
 	jsr plot
 
 	;jsr delay
@@ -155,7 +169,7 @@ init_player:
 	ldy #11
 	stx PY
 	sty PX
-	lda #PLAYER
+	lda #CHR_PLAYER
 	jsr plot
 	rts
 
@@ -170,36 +184,50 @@ update_player:
 	; store old pos
 	stx $0
 	sty $1
-	cmp #CURSOR_UP
+	cmp #CHR_UP
 	bne @skip1
 	dex
-@skip1:	cmp #CURSOR_DOWN
+@skip1:	cmp #CHR_DOWN
 	bne @skip2
 	inx
-@skip2: cmp #CURSOR_LEFT
+@skip2: cmp #CHR_LEFT
 	bne @skip3
 	dey
-@skip3: cmp #CURSOR_RIGHT
+@skip3: cmp #CHR_RIGHT
 	bne @skip4
 	iny
 @skip4:	; X,Y = move target
 	jsr move
 	; check obstacle
 	lda (LINE_PTR),y
-	cmp #32
-	beq @blocked
+	cmp #SCR_FLOOR
+	bne @blocked
 
 	; move player to X,Y
 	sty PX			; store new pos
 	stx PY
-	lda #PLAYER
+	lda #CHR_PLAYER
 	jsr plot		; draw player at new pos
 	ldx $0			; restore old pos
 	ldy $1
-	lda #FLOOR
+	lda #CHR_FLOOR
 	jsr plot		; erase old player
 
 @blocked:
+	rts
+
+	;*****************************************************************
+	; initialize enemies
+	;*****************************************************************
+
+init_enemies:
+	lda #ENEMY_COUNT
+	sta $0
+@loop:	jsr randomloc
+	lda #CHR_ENEMY
+	jsr plot
+	dec $0
+	bne @loop
 	rts
 
 	;*****************************************************************
@@ -259,7 +287,7 @@ print:	stx $0
 ;	rts
 
 clearscreen:
-	lda #CLEAR_SCREEN
+	lda #CHR_CLR_HOME
         jsr CHROUT
         rts
 
@@ -300,6 +328,33 @@ no_eor:	sta seed
 seed:	.byte 0		; TODO: initialize seed from raster pos or timer value!
 
 	;*****************************************************************
+	; picks a random unoccupied location, returns: X=row, Y=column
+	;*****************************************************************
+
+randomloc:
+	; pick random row
+	jsr rand8
+	and #31
+	tax
+	inx
+	inx
+	cmp #20
+	bpl randomloc
+	; pick random column
+@rndcol:jsr rand8
+	and #31
+	tay
+	iny
+	cmp #20
+	bpl @rndcol
+	; check that it is free
+	jsr move
+	lda (LINE_PTR),y
+	cmp #SCR_FLOOR
+	bne randomloc
+	rts
+
+	;*****************************************************************
 	; waits for a key press
 	;*****************************************************************
 
@@ -312,4 +367,4 @@ waitkey:jsr GETIN
 	; data
 	;*****************************************************************
 
-text:	.byte	BLUE,"DESCENDING...",0
+text:	.byte	CHR_BLUE,"DESCENDING...",0
