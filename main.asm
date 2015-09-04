@@ -4,14 +4,18 @@
 	; (C) 2015 Petri Hakkinen. All rights reserved.
 	;*****************************************************************
 
+	; constants
 	SCREEN 		= $1e00
 	SCREEN_WIDTH	= 22
 	SCREEN_HEIGHT	= 23
 
+	; kernal routines
 	CHROUT		= $ffd2
 	PLOT		= $fff0
 	GETIN		= $ffe4
+	LINE_PTR	= $D1		; pointer to current line is stored in $d1-$d2
 
+	; char codes
 	WHITE		= 5
 	RED		= 28
 	GREEN		= 30
@@ -26,6 +30,12 @@
 	CURSOR_RIGHT	= 29
 	HOME		= 19
 	CLEAR_SCREEN	= 147
+	PLAYER		= 64
+	FLOOR		= 166
+
+	; zero page variables
+	PX		= $10
+	PY		= $11
 
 	.byt $01,$10			; PRG file header (starting address of the program)
 
@@ -46,18 +56,23 @@ bend:	.word 0           		; end of program
 	; main program
 	;*****************************************************************
 
-start:	jsr random_level
+start:
+	jsr random_level
+	jsr init_player
 
+	; draw message bar
 	ldx #0
 	ldy #0
 	jsr move
-
         ldx #<text
         ldy #>text
         jsr print
 
+mainloop:
 	jsr waitkey
-	jmp start
+	jsr update_player
+
+	jmp mainloop
 
 	;*****************************************************************
 	; random level generator
@@ -70,8 +85,8 @@ random_level:
 	; X,Y = x,y
 	; $4,$5 = dx,dy
 	; $6 = counter
-	ldx #11		; x = 11
-	ldy #10		; y = 10
+	ldx #10		; x = 10
+	ldy #11		; y = 11
 	lda #1
 	sta $4		; dx = 1
 	lda #0
@@ -85,17 +100,8 @@ random_level:
 	bcc @turn
 
 	; plot
-@loop:	txa		; push X,Y
-	pha
-	tya
-	pha
-	jsr move
-	pla		; pull X,Y
-	tay
-	pla
-	tax
-	lda #166
-	jsr CHROUT
+@loop:	lda #FLOOR
+	jsr plot
 
 	;jsr delay
 
@@ -112,9 +118,9 @@ random_level:
 	beq @done	; done when counter ovewflows
 
 	; turn at edge
-	cpx #1
+	cpx #2
 	beq @turn
-	cpy #2
+	cpy #1
 	beq @turn
 	cpx #20
 	beq @turn
@@ -141,15 +147,85 @@ random_level:
 @done:	rts
 
 	;*****************************************************************
-	; moves cursor to X,Y
+	; initialize player
 	;*****************************************************************
 
-move:	stx $0		; swap X and Y
+init_player:
+	ldx #10
+	ldy #11
+	stx PY
+	sty PX
+	lda #PLAYER
+	jsr plot
+	rts
+
+	;*****************************************************************
+	; update player
+	;*****************************************************************
+
+update_player:
+	; handle movement
+	ldy PX
+	ldx PY
+	; store old pos
+	stx $0
+	sty $1
+	cmp #CURSOR_UP
+	bne @skip1
+	dex
+@skip1:	cmp #CURSOR_DOWN
+	bne @skip2
+	inx
+@skip2: cmp #CURSOR_LEFT
+	bne @skip3
+	dey
+@skip3: cmp #CURSOR_RIGHT
+	bne @skip4
+	iny
+@skip4:	; X,Y = move target
+	jsr move
+	; check obstacle
+	lda (LINE_PTR),y
+	cmp #32
+	beq @blocked
+
+	; move player to X,Y
+	sty PX			; store new pos
+	stx PY
+	lda #PLAYER
+	jsr plot		; draw player at new pos
+	ldx $0			; restore old pos
+	ldy $1
+	lda #FLOOR
+	jsr plot		; erase old player
+
+@blocked:
+	rts
+
+	;*****************************************************************
+	; moves cursor to row X, column Y
+	;*****************************************************************
+
+move:	pha		; store A,X,Y
+	txa
+	pha
 	tya
-	tax
-	ldy $0
+	pha
 	clc
-	jsr PLOT
+	jsr PLOT	; trashes A,X,Y
+	pla		; restore A,X,Y
+	tay
+	pla
+	tax
+	pla
+	rts
+
+	;*****************************************************************
+	; plots a character in A at row X, column Y
+	;*****************************************************************
+
+plot:	jsr move
+	jsr CHROUT
 	rts
 
 	;*****************************************************************
@@ -208,7 +284,7 @@ delay:	;txa
 	rts
 
 	;*****************************************************************
-	; simple 8-bit random number generator
+	; simple 8-bit random number generator by White Flame (aka David Holz)
 	; source: http://codebase64.org/doku.php?id=base:small_fast_8-bit_prng
 	;*****************************************************************
 
