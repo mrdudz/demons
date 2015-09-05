@@ -244,11 +244,11 @@ update_player:
 	; check obstacle
 	lda (LINE_PTR),y
 	cmp #SCR_STAIRS
-	beq enter_stairs	; allow moving into stairs
+	beq @enter_stairs	; allow moving into stairs
 	cmp #SCR_WALL
 	beq @blocked
 	cmp #SCR_DOOR
-	beq open_door
+	beq @open_door
 	cmp #SCR_FLOOR
 	bne player_attack
 
@@ -271,11 +271,7 @@ update_player:
         jsr print_msg
 	rts
 
-	;*****************************************************************
-	; open door
-	;*****************************************************************
-
-open_door:
+@open_door:
 	lda #CHR_FLOOR
 	jsr plot
         ldx #<opened
@@ -283,11 +279,7 @@ open_door:
         jsr print_msg
 	rts
 
-	;*****************************************************************
-	; enter stairs
-	;*****************************************************************
-
-enter_stairs:
+@enter_stairs:
 	jsr random_level
         ldx #<descend
         ldy #>descend

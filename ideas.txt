@@ -3,6 +3,7 @@ A roguelike for the unexpanded VIC-20
 
 TODO:
 - map reveal
+- fix player/stairs placement so that stairs are always at least X cells away
 
 level generation:
 - start with a level filled with walls
