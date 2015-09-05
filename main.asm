@@ -35,19 +35,31 @@
 	CHR_RIGHT	= 29
 	CHR_HOME	= 19
 	CHR_CLR_HOME	= 147
-	CHR_FLOOR	= 166
-	CHR_WALL	= 32
+	CHR_FLOOR	= 32
+	CHR_WALL	= 166
 	CHR_PLAYER	= 64
 	CHR_ENEMY	= 113
 	CHR_STAIRS	= 62
 	CHR_DOOR	= 43
+	CHR_RVS_ON	= 18
+	CHR_RVS_OFF	= 146
 
 	; screen codes
-	SCR_FLOOR	= 102
-	SCR_WALL	= 32
+	SCR_FLOOR	= 32
+	SCR_WALL	= 102
 	SCR_STAIRS	= 62
-	SCR_DOOR	= 43
-	
+	SCR_DOOR	= 43+$80
+
+	; color codes
+	COLOR_BLACK	= 0
+	COLOR_WHITE	= 1
+	COLOR_RED	= 2
+	COLOR_CYAN	= 3
+	COLOR_PURPLE	= 4
+	COLOR_GREEN	= 5
+	COLOR_BLUE	= 6
+	COLOR_YELLOW	= 7
+
 	; zero page variables
 	PX		= $10
 	PY		= $11
@@ -75,10 +87,12 @@ bend:	.word 0           		; end of program
 	; main program
 	;*****************************************************************
 
-start:	;lda #8
-	;sta VIC_SCR_COLORS
-	;lda #1
-	;sta CUR_COLOR
+start:	lda #8
+	sta VIC_SCR_COLORS
+	lda #COLOR_CYAN
+	sta CUR_COLOR
+	lda #$80			; turn on key repeat for all keys
+	sta $028a		
 
 	jsr random_level
 
@@ -190,6 +204,8 @@ init_player:
 	ldy #11
 	stx PY
 	sty PX
+	lda #COLOR_WHITE
+	sta CUR_COLOR
 	lda #CHR_PLAYER
 	jsr plot
 	rts
@@ -205,19 +221,25 @@ update_player:
 	; store old pos
 	stx $0
 	sty $1
-	cmp #CHR_UP
-	bne @skip1
-	dex
-@skip1:	cmp #CHR_DOWN
-	bne @skip2
-	inx
-@skip2: cmp #CHR_LEFT
-	bne @skip3
-	dey
-@skip3: cmp #CHR_RIGHT
-	bne @skip4
-	iny
-@skip4:	; X,Y = move target
+	cmp #'W' ;CHR_UP
+	beq @up
+	cmp #'S' ;CHR_DOWN
+	beq @down
+	cmp #'A' ;CHR_LEFT
+	beq @left
+	cmp #'D' ;CHR_RIGHT
+	beq @right
+	rts
+
+@up:	dex
+	jmp @move
+@down:	inx
+	jmp @move
+@left:	dey
+	jmp @move
+@right:	iny
+
+@move:	; X,Y = move target
 	jsr move
 	; check obstacle
 	lda (LINE_PTR),y
@@ -233,14 +255,20 @@ update_player:
 	; move player to X,Y
 	sty PX			; store new pos
 	stx PY
+	lda #COLOR_WHITE
+	sta CUR_COLOR
 	lda #CHR_PLAYER
 	jsr plot		; draw player at new pos
 	ldx $0			; restore old pos
 	ldy $1
 	lda #CHR_FLOOR
 	jsr plot		; erase old player
+	rts
 
 @blocked:
+        ldx #<blocked
+        ldy #>blocked
+        jsr print_msg
 	rts
 
 	;*****************************************************************
@@ -302,6 +330,8 @@ player_attack:
 	;*****************************************************************
 
 init_enemies:
+	lda #COLOR_GREEN
+	sta CUR_COLOR
 	lda #ENEMY_COUNT
 	sta $0
 @loop:	jsr randomloc
@@ -345,9 +375,14 @@ init_doors:
 	cpy #@doorbits_end-@doorbits
 	bne @chk
 	jmp @skip
-@door:	lda #CHR_DOOR		; place door
-	jsr CHROUT
-@skip:  pla	; restore Y
+@door:	txa			; save X
+	pha
+	ldx #<@doort
+	ldy #>@doort
+	jsr print 		; place door
+	pla			; restore X
+	tax
+@skip:  pla			; restore Y
 	tay	
 	dey
 	bne @xloop
@@ -357,7 +392,8 @@ init_doors:
 
 @doorbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
 @doorbits_end: 
-	
+@doort: .byte CHR_RVS_ON,CHR_CYAN,CHR_DOOR,CHR_RVS_OFF,0
+
 	;*****************************************************************
 	; returns a bitmask encoding the walls of eight adjacent cells at cursor pos
 	; bit on = wall, bit off = floor
@@ -469,6 +505,8 @@ print_hex:
 print_msg:
 	lda #CHR_HOME
 	jsr CHROUT
+	lda #COLOR_WHITE
+	sta CUR_COLOR
         jsr print
         ; clear rest of the line
         lda #32
@@ -483,21 +521,21 @@ print_msg:
 	; clears the screen
 	;*****************************************************************
 
-;clearscreen:
-;	; screen is 22*23 = 506 bytes long
-;	; to save bytes we clear two full pages (512 bytes)
-;	lda #32   		; space
-;	ldx #0
-;@loop:	sta SCREEN,x
-;	sta SCREEN+$100,x
-;	inx
-;	bne @loop
-;	rts
-
 clearscreen:
+	; screen is 22*23 = 506 bytes long
+	; to save bytes we clear two full pages (512 bytes)
 	lda #CHR_CLR_HOME
-        jsr CHROUT
-        rts
+      	jsr CHROUT
+	ldx #0
+@loop:	lda #SCR_WALL
+	sta SCREEN,x
+	sta SCREEN+$100,x
+	lda #COLOR_CYAN		; color
+	sta COLOR_RAM,x
+	sta COLOR_RAM+$100,x
+	inx
+	bne @loop
+	rts
 
 	;*****************************************************************
 	; short delay in busy loop
@@ -566,7 +604,7 @@ randomloc:
 	beq @done
 	dec RNDLOC_TMP
 	bne @rndcol
-	jmp randomloc
+	beq randomloc  ;same as 'jmp randomloc' but saves 1 byte
 @done:	rts
 
 	;*****************************************************************
@@ -588,3 +626,4 @@ youhit:	.byte	"YOU HIT THE XXX!",0
 youmiss:.byte	"YOU MISS.",0
 mondie:	.byte	"THE XXX IS DEAD!",0
 opened:	.byte	"OPENED.",0
+blocked:.byte	"BLOCKED.",0
