@@ -10,6 +10,7 @@
 	SCREEN_WIDTH	= 22
 	SCREEN_HEIGHT	= 23
 	ENEMY_COUNT	= 3
+	DEBUG		= 0		; set to 0 for strip debug code
 
 	; kernal routines
 	CHROUT		= $ffd2
@@ -42,13 +43,15 @@
 	CHR_DOOR	= 43
 
 	; screen codes
-	SCR_STAIRS	= 62
 	SCR_FLOOR	= 102
 	SCR_WALL	= 32
-
+	SCR_STAIRS	= 62
+	SCR_DOOR	= 43
+	
 	; zero page variables
 	PX		= $10
 	PY		= $11
+	RNDLOC_TMP	= $12
 
 	; VIC registers
 	VIC_SCR_COLORS	= $900F
@@ -89,6 +92,7 @@ mainloop:
 	jsr update_player
 
 	; test extract bits
+	.if 0
 	ldy PX
 	ldx PY
 	jsr move
@@ -97,6 +101,7 @@ mainloop:
 	ldx #1
 	jsr move
 	jsr print_hex
+	.endif
 
 	jmp mainloop
 
@@ -170,8 +175,8 @@ random_level:
 
 	jmp @loop
 
-@done:	jsr init_player
-	jsr init_doors
+@done:	jsr init_doors
+	jsr init_player
 	jsr init_stairs
 	jsr init_enemies
 	rts
@@ -220,6 +225,8 @@ update_player:
 	beq enter_stairs	; allow moving into stairs
 	cmp #SCR_WALL
 	beq @blocked
+	cmp #SCR_DOOR
+	beq open_door
 	cmp #SCR_FLOOR
 	bne player_attack
 
@@ -234,6 +241,18 @@ update_player:
 	jsr plot		; erase old player
 
 @blocked:
+	rts
+
+	;*****************************************************************
+	; open door
+	;*****************************************************************
+
+open_door:
+	lda #CHR_FLOOR
+	jsr plot
+        ldx #<opened
+        ldy #>opened
+        jsr print_msg
 	rts
 
 	;*****************************************************************
@@ -307,32 +326,38 @@ init_stairs:
 	;*****************************************************************
 
 init_doors:
-	rts
-
 	; traverse the level and extract bits for each floor cell
 	; place door if bits match with one in the door bit list
-	ldx #2	; X = row
-	ldy #1	; Y = column
-	jsr move
-@loop:	ldy CURSOR_X
+	ldx #20 		; X = row
+@yloop:	ldy #20 		; Y = column
+@xloop:	jsr move		; move cursor
+	tya			; save Y
+	pha
 	lda (LINE_PTR),y
 	cmp #SCR_FLOOR
 	bne @skip
 	jsr extract_bits
-	cmp #$1b		; TODO: incorrect bitmask
-	bne @skip
-	lda #CHR_DOOR
-	sta (LINE_PTR),y
-@skip:  lda #CHR_RIGHT		; advance cursor
+	; check if bits match with a possible door location
+	ldy #0
+@chk:	cmp @doorbits,y
+	beq @door
+	iny
+	cpy #@doorbits_end-@doorbits
+	bne @chk
+	jmp @skip
+@door:	lda #CHR_DOOR		; place door
 	jsr CHROUT
-	; are we done?
-	lda LINE_PTR+1
-	cmp #$1f		; TODO: this covers only half of the screen!
-	;bne @loop
+@skip:  pla	; restore Y
+	tay	
+	dey
+	bne @xloop
+	dex
+	bne @yloop
 	rts
 
-doorbits: .byte 0 ; predetermined list of cell bits for door placement
-
+@doorbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
+@doorbits_end: 
+	
 	;*****************************************************************
 	; returns a bitmask encoding the walls of eight adjacent cells at cursor pos
 	; bit on = wall, bit off = floor
@@ -349,7 +374,6 @@ extract_bits:
 	iny
 	jsr CHROUT
 	asl $0		; shift left bitmask
-
 	; read screen code under cursor
 	tya		; save y
 	pha
@@ -417,7 +441,7 @@ print:	stx $0
 	; prints 8-bit hex number at cursor, in: A
 	;*****************************************************************
 
-	; TODO: disable print_hex (and other debug routines) in final build
+	.if DEBUG
 print_hex:
 	tax
 	lsr
@@ -435,6 +459,7 @@ print_hex:
 	rts
 
 @digits: .byte "0123456789ABCDEF"
+	.endif
 
 	;*****************************************************************
 	; prints message at the top of the screen
@@ -478,21 +503,23 @@ clearscreen:
 	; short delay in busy loop
 	;*****************************************************************
 
-delay:	;txa
-	;pha
-	;tya
-	;pha
-	ldy #$ff
+	.if DEBUG
+delay:	txa
+	pha
+	tya
+	pha
+	ldy #$40
 @delay1:ldx #$ff
 @delay2:dex
 	bne @delay2
 	dey
 	bne @delay1
-	;pla
-	;tay
-	;pla
-	;tax
+	pla
+	tay
+	pla
+	tax
 	rts
+	.endif
 
 	;*****************************************************************
 	; simple 8-bit random number generator by White Flame (aka David Holz)
@@ -521,9 +548,11 @@ randomloc:
 	tax
 	inx
 	inx
-	cmp #20
+	cpx #20
 	bpl randomloc
 	; pick random column
+	lda #0
+	sta RNDLOC_TMP		; max 256 tries on this row
 @rndcol:jsr rand8
 	and #31
 	tay
@@ -534,8 +563,11 @@ randomloc:
 	jsr move
 	lda (LINE_PTR),y
 	cmp #SCR_FLOOR
-	bne randomloc
-	rts
+	beq @done
+	dec RNDLOC_TMP
+	bne @rndcol
+	jmp randomloc
+@done:	rts
 
 	;*****************************************************************
 	; waits for a key press
@@ -555,3 +587,4 @@ descend:.byte	"DESCENDING...",0
 youhit:	.byte	"YOU HIT THE XXX!",0
 youmiss:.byte	"YOU MISS.",0
 mondie:	.byte	"THE XXX IS DEAD!",0
+opened:	.byte	"OPENED.",0

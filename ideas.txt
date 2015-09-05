@@ -2,9 +2,7 @@ Demons of Dex
 A roguelike for the unexpanded VIC-20
 
 TODO:
-- door placement
 - map reveal
-- disable print_hex (and other debug routines) in final build
 
 level generation:
 - start with a level filled with walls
