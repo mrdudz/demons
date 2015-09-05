@@ -1,117 +1,74 @@
 Demons of Dex
 A roguelike for the unexpanded VIC-20
 
+TODO:
+- door placement
+- map reveal
+
 level generation:
 - start with a level filled with walls
 - random walker carves tunnels, turns at map edges
 
-monsters & items:
+tiles:
+	- FLOOR
+	- WALL
+	- DOOR			; reveals next area, when opened, door is removed from the map
+	- SECRET_DOOR	; wall that can be walked through by player
+	- WATER			; only player can traverse water (only player can remember contents of cell)
+	- LAVA			; deals damage
+	- STAIRS		; descend to level below, one way (no going back to previous level)
+	- CHEST			; a chest contains a random item but may be trapped
+	- ARMOR			; brown = leather, green = cloak, grey = plate mail, blue = magic armor
+	- WEAPON		; dagger, sword, axe 
+	- ACCESSORY		; rings, amulets
+
+monsters:
 - no per-instance data structures, state of object is coded into screen ram
 - monsters have no health! random chance of killing (affected by per-type armor rating)
 - monster variations: green orc, grey orc?
 - wounded monsters can be visualized with red color
 - monster ai: fullscreen pass that updates screen ram
+- monster types:
+	- BAT
+	- RAT
+	- SNAKE: poisons
+	- SPIDER: webs
+	- ORC
+	- UNDEAD
+	- SLIME: slimes don't move, they spread to adjacent cells
+	- WIZARD: wizards can teleport and shoot lightning bolts
+	- DEMON: demons are immune to normal weapons
+	- DRAGON
+- monster flags:
+	- MF_TOUGH			= 1	; when a hit would kill the monster, it is wounded instead (turns red)
+	- MF_DROP_SCROLL	= 2
+	- MF_DROP_POTION	= 4
+	- MF_DROP_GOLD		= 8
+	- MF_DROP_GEM		= 16
+	- MF_DROP_ARMOR		= 32
+	- MF_DROP_WEAPON	= 64
+	- MF_UNUSED			= 128
+- monster stats (stored by type, not per instance):
+	- char name[8]
+	- byte damage		; how much damage the monster deals
+	- byte armor		; how difficult it is to kill the monster
+	- byte speed		; how often monster is updated (every nth update)
+	- byte flags		; misc flags (special abilities)
+
+items:
 - scrolls & potions: effect is determined by color ram
-- items are picked up by walking over them
-
-// monster type definition
-struct Monster
-{
-	uint8_t damage;		// how much damage the monster deals
-	uint8_t	armor;		// how difficult it is to kill the monster
-	uint8_t speed;		// how often monster is updated (every nth update)
-	uint8_t flags;		// misc flags (special abilities)
-	char	name[8];
-};
-
-// monster flags
-#define MF_TOUGH			1	// when a hit would kill the monster, it is wounded instead (turns red)
-#define MF_DROP_SCROLL		2
-#define MF_DROP_POTION		4
-#define MF_DROP_GOLD		8
-#define MF_DROP_GEM			16
-#define MF_DROP_ARMOR		32
-#define MF_DROP_WEAPON		64
-#define MF_UNUSED			128
-
-// chars (up to 64 available)
-#define FLOOR
-#define WATER			// only player can traverse water (only player can remember contents of cell)
-#define LAVA			// deals damage
-#define STAIRS
-#define WALL
-#define DOOR			// when opened, door is removed from the map?
-#define SECRET_DOOR		// wall that can be walked through
-#define CHEST			// a chest contains a random item but may be trapped
-#define SCROLL			// 
-#define POTION			// blue = healing, yellow = level up, red = strength, green = poison, etc.
-#define GOLD			// increases score
-#define GEM				// reveals level
-#define ARMOR			// brown = leather, green = cloak, grey = plate mail, blue = magic armor
-#define WEAPON			//  
-#define ACCESSORY		// rings, amulets
-#define BAT
-#define RAT
-#define ORC
-#define UNDEAD
-#define SLIME			// slimes don't move, they spread to adjacent cells
-#define WIZARD			// wizards can teleport and shoot lightning bolts
-#define DEMON			// demons are immune to normal weapons
-#define DRAGON
-// alphabets, numbers, etc.
+- items are picked up by walking over them (message "Found potion.")
+- gem: reveals level map when picked up
+- gold: increases score when picked up
+- usable items:
+	- POTION (f1): heals
+	- SKULL (f3): destroys all visible creatures (screen shake & sound)
+	- SCROLL (f5): magic missile?
+	- KEY (f7): opens locked door
 
 animated tiles (update char ram):
+- room for 64 characters (including alphabets,numbers,commas etc.), takes 512 bytes at end of ram
 - gold twinkle
 - water/lava vertical scrolling
 - monster animation by mirroring char data (how to efficiently do bit reverse?)
-
-vic specs:
-- normal screen size is 22x23 chars
-- number of columns can be extended to 27
-- chars can be doubled vertically to 8x16
-- screen ram location 7680
-- color ram location 38400-38911
-
-misc:
-- only one level can be stored in memory, therefore can't go back to previously level
-
-
-random level generator pseudo code
-----------------------------------
-
-: clear screen
-for i=7680,8185 : poke i,160 : next
-for i=38400,38911 : poke i,0 : next
-
-; init walker
-x = 11
-y = 10
-dx = 1
-dy = 0
-c = 0
-goto turnrandom
-
-; move walker
-loop:
-poke 7680+y*22+x,32
-x = x + dx
-y = y + dy
-c = c + 1
-
-; are we done yet?
-if c = 250 then goto done
-
-; edge hit?
-if x = 1 or x = 20 or y = 2 or y = 20 then goto turn
-
-; turn randomly
-turnrandom:
-if rnd(0) > 0.3 then goto loop
-
-turn:
-t = -dx
-dx = dy
-dy = t
-goto loop
-
-done:
+- targetting: update character dynamically (inverse of character below cursor)
