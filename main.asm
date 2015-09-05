@@ -6,6 +6,7 @@
 
 	; constants
 	SCREEN 		= $1e00
+	COLOR_RAM	= $9600
 	SCREEN_WIDTH	= 22
 	SCREEN_HEIGHT	= 23
 	ENEMY_COUNT	= 3
@@ -38,6 +39,7 @@
 	CHR_PLAYER	= 64
 	CHR_ENEMY	= 113
 	CHR_STAIRS	= 62
+	CHR_DOOR	= 43
 
 	; screen codes
 	SCR_STAIRS	= 62
@@ -85,6 +87,16 @@ start:	;lda #8
 mainloop:
 	jsr waitkey
 	jsr update_player
+
+	; test extract bits
+	ldy PX
+	ldx PY
+	jsr move
+	jsr extract_bits
+	ldy #0
+	ldx #1
+	jsr move
+	jsr print_hex
 
 	jmp mainloop
 
@@ -159,8 +171,9 @@ random_level:
 	jmp @loop
 
 @done:	jsr init_player
-	jsr init_enemies
+	jsr init_doors
 	jsr init_stairs
+	jsr init_enemies
 	rts
 
 	;*****************************************************************
@@ -290,6 +303,76 @@ init_stairs:
 	rts
 
 	;*****************************************************************
+	; initialize doors
+	;*****************************************************************
+
+init_doors:
+	rts
+
+	; traverse the level and extract bits for each floor cell
+	; place door if bits match with one in the door bit list
+	ldx #2	; X = row
+	ldy #1	; Y = column
+	jsr move
+@loop:	ldy CURSOR_X
+	lda (LINE_PTR),y
+	cmp #SCR_FLOOR
+	bne @skip
+	jsr extract_bits
+	cmp #$1b		; TODO: incorrect bitmask
+	bne @skip
+	lda #CHR_DOOR
+	sta (LINE_PTR),y
+@skip:  lda #CHR_RIGHT		; advance cursor
+	jsr CHROUT
+	; are we done?
+	lda LINE_PTR+1
+	cmp #$1f		; TODO: this covers only half of the screen!
+	;bne @loop
+	rts
+
+doorbits: .byte 0 ; predetermined list of cell bits for door placement
+
+	;*****************************************************************
+	; returns a bitmask encoding the walls of eight adjacent cells at cursor pos
+	; bit on = wall, bit off = floor
+	; in: (cursor pos)   out: A=bitmask    trashes: X,Y
+	;*****************************************************************
+
+extract_bits:
+	lda #0
+	sta $0		; $0 = result bitmask
+	tay		; Y = 0
+@loop:	; move cursor
+	lda @dirs,y
+	beq @done
+	iny
+	jsr CHROUT
+	asl $0		; shift left bitmask
+
+	; read screen code under cursor
+	tya		; save y
+	pha
+	ldy CURSOR_X
+	lda (LINE_PTR),y
+	cmp #SCR_FLOOR
+	beq @floor
+	; obstacle found, set bit
+	inc $0
+@floor: pla		; restore y
+	tay
+	jmp @loop
+@done:	; restore cursor
+	lda #CHR_RIGHT
+	jsr CHROUT
+	lda #CHR_DOWN
+	jsr CHROUT
+	lda $0		; result to A
+	rts
+
+@dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
+
+	;*****************************************************************
 	; moves cursor to row X, column Y
 	;*****************************************************************
 
@@ -329,6 +412,29 @@ print:	stx $0
 	iny
 	jmp @loop
 @done:	rts
+
+	;*****************************************************************
+	; prints 8-bit hex number at cursor, in: A
+	;*****************************************************************
+
+	; TODO: disable print_hex (and other debug routines) in final build
+print_hex:
+	tax
+	lsr
+	lsr
+	lsr
+	lsr
+	tay
+	lda @digits,y
+	jsr CHROUT
+	txa
+	and #$f
+	tay
+	lda @digits,y
+	jsr CHROUT
+	rts
+
+@digits: .byte "0123456789ABCDEF"
 
 	;*****************************************************************
 	; prints message at the top of the screen
