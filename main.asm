@@ -417,7 +417,7 @@ init_doors:
 	iny
 	cpy #@doorbits_end-@doorbits
 	bne @chk
-	jmp @skip
+	beq @skip		; same as 'jmp @skip' but saves 1 byte
 @door:	lda #CHR_DOOR
 	jsr CHROUT
 @skip:  pla			; restore Y
