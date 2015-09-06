@@ -46,6 +46,8 @@
 	CHR_RVS_OFF	= 146
 
 	; screen codes
+	SCR_PLAYER	= 0
+	SCR_ENEMY	= 81
 	SCR_FLOOR	= 46
 	SCR_WALL	= 102
 	SCR_STAIRS	= 62
@@ -62,6 +64,8 @@
 	COLOR_YELLOW	= 7
 	COLOR_UNSEEN	= COLOR_BLACK
 	COLOR_EXPLORED	= COLOR_CYAN
+	COLOR_PLAYER	= COLOR_WHITE
+	COLOR_ENEMY	= COLOR_GREEN
 
 	; zero page variables
 	PX		= $10
@@ -95,6 +99,9 @@ start:	lda #8
 	sta VIC_SCR_COLORS
 	lda #$80			; turn on key repeat for all keys
 	sta $028a		
+
+	lda #CHR_CLR_HOME		; clear screen
+      	jsr CHROUT
 
 	jsr random_level
 
@@ -295,10 +302,10 @@ update_player:
 	rts
 
 @enter_stairs:
-	jsr random_level
         ldx #<descend
         ldy #>descend
         jsr print_msg
+	jsr random_level
 	rts
 
 	;*****************************************************************
@@ -457,11 +464,22 @@ reveal_area:
 	and #7			; color ram is 4-bit wide, high nibble contains garbage
 	cmp #COLOR_UNSEEN
 	bne @done
+
 	; reveal cell
-	lda #COLOR_EXPLORED
-	sta (COLOR_PTR),y
 	lda (LINE_PTR),y
+	tax			; X = screen code to be revealed
+	lda #COLOR_EXPLORED
+	cpx #SCR_PLAYER
+	bne @skip1
+	lda #COLOR_PLAYER
+@skip1:	cpx #SCR_ENEMY
+	bne @skip2
+	lda #COLOR_ENEMY
+@skip2:	sta (COLOR_PTR),y
+	ldx CURSOR_Y		; restore Y
+
 	; stop recursion at wall or door cell
+	lda (LINE_PTR),y
 	cmp #SCR_WALL
 	beq @done
 	cmp #SCR_DOOR
@@ -595,14 +613,12 @@ print_msg:
 clearscreen:
 	; screen is 22*23 = 506 bytes long
 	; to save bytes we clear two full pages (512 bytes)
-	lda #CHR_CLR_HOME
-      	jsr CHROUT
 	ldx #0
 @loop:	lda #SCR_WALL
-	sta SCREEN,x
+	sta SCREEN+22,x		; dont clear first line
 	sta SCREEN+$100,x
 	lda #COLOR_UNSEEN
-	sta COLOR_RAM,x
+	sta COLOR_RAM+22,x	; dont clear first line
 	sta COLOR_RAM+$100,x
 	inx
 	bne @loop

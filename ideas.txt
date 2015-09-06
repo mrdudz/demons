@@ -2,9 +2,6 @@ Demons of Dex
 A roguelike for the unexpanded VIC-20
 
 TODO:
-- fix "descending" text appearing too late
-	- print text before generating new level in enter_stairs routine
-	- change clearscreen to not clear first line
 - fix player/stairs placement so that stairs are always at least X cells away
 - RNG is terrible, same levels can repeat during a play session (only 256 different levels)
 
