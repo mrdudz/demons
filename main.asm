@@ -36,22 +36,42 @@
 	CHR_RIGHT	= 29
 	CHR_HOME	= 19
 	CHR_CLR_HOME	= 147
-	CHR_FLOOR	= 46
-	CHR_WALL	= 166
-	CHR_PLAYER	= 64
-	CHR_ENEMY	= 113
-	CHR_STAIRS	= 62
-	CHR_DOOR	= 43
-	CHR_RVS_ON	= 18
-	CHR_RVS_OFF	= 146
+	CHR_WALL	= 64
+	CHR_FLOOR	= 65
+	CHR_POTION	= 66
+	CHR_GOLD	= 67
+	CHR_STAR	= 68
+	CHR_DOOR	= 69
+	CHR_STAIRS	= 70
+	CHR_PLAYER	= 71
+	CHR_BAT		= 72
+	CHR_RAT		= 73
+	CHR_SNAKE	= 74
+	CHR_ORC		= 75
+	CHR_UNDEAD	= 76
+	CHR_SLIME	= 77
+	CHR_WIZARD	= 78
+	CHR_DEMON	= 79
+	CHR_DRAGON	= 80
 
 	; screen codes
-	SCR_PLAYER	= 0
-	SCR_ENEMY	= 81
-	SCR_FLOOR	= 46
-	SCR_WALL	= 102
-	SCR_STAIRS	= 62
-	SCR_DOOR	= 43+$80
+	SCR_WALL	= 0
+	SCR_FLOOR	= 1
+	SCR_POTION	= 2
+	SCR_GOLD	= 3
+	SCR_STAR	= 4
+	SCR_DOOR	= 5
+	SCR_STAIRS	= 6
+	SCR_PLAYER	= 7
+	SCR_BAT		= 8
+	SCR_RAT		= 9
+	SCR_SNAKE	= 10
+	SCR_ORC		= 11
+	SCR_UNDEAD	= 12
+	SCR_SLIME	= 13
+	SCR_WIZARD	= 14
+	SCR_DEMON	= 15
+	SCR_DRAGON	= 16
 
 	; color codes
 	COLOR_BLACK	= 0
@@ -64,8 +84,6 @@
 	COLOR_YELLOW	= 7
 	COLOR_UNSEEN	= COLOR_BLACK
 	COLOR_EXPLORED	= COLOR_CYAN
-	COLOR_PLAYER	= COLOR_WHITE
-	COLOR_ENEMY	= COLOR_GREEN
 
 	; zero page variables
 	PX		= $10
@@ -98,7 +116,18 @@ bend:	.word 0           		; end of program
 start:	lda #8
 	sta VIC_SCR_COLORS
 	lda #$80			; turn on key repeat for all keys
-	sta $028a		
+	sta $028a
+	lda #$ff			; set character base to $1c00
+	sta $9005
+
+	; init charset
+	; TODO: this can be removed if charset is placed directly into data segment starting at $1c00
+	ldx #0
+@copy:  lda charset,x
+	sta $1c00,x
+	inx
+	cpx #charset_end-charset
+	bne @copy
 
 	lda #CHR_CLR_HOME		; clear screen
       	jsr CHROUT
@@ -349,7 +378,7 @@ init_enemies:
 	lda #ENEMY_COUNT
 	sta $0
 @loop:	jsr randomloc
-	lda #CHR_ENEMY
+	lda #CHR_RAT
 	jsr plot
 	dec $0
 	bne @loop
@@ -389,13 +418,8 @@ init_doors:
 	cpy #@doorbits_end-@doorbits
 	bne @chk
 	jmp @skip
-@door:	txa			; save X
-	pha
-	ldx #<@doort
-	ldy #>@doort
-	jsr print 		; place door
-	pla			; restore X
-	tax
+@door:	lda #CHR_DOOR
+	jsr CHROUT
 @skip:  pla			; restore Y
 	tay	
 	dey
@@ -406,7 +430,6 @@ init_doors:
 
 @doorbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
 @doorbits_end: 
-@doort: .byte CHR_RVS_ON,CHR_DOOR,CHR_RVS_OFF,0
 
 	;*****************************************************************
 	; returns a bitmask encoding the walls of eight adjacent cells at cursor pos
@@ -468,15 +491,9 @@ reveal_area:
 	; reveal cell
 	lda (LINE_PTR),y
 	tax			; X = screen code to be revealed
-	lda #COLOR_EXPLORED
-	cpx #SCR_PLAYER
-	bne @skip1
-	lda #COLOR_PLAYER
-@skip1:	cpx #SCR_ENEMY
-	bne @skip2
-	lda #COLOR_ENEMY
-@skip2:	sta (COLOR_PTR),y
-	ldx CURSOR_Y		; restore Y
+	lda colors,x
+	sta (COLOR_PTR),y
+	ldx CURSOR_Y		; restore X
 
 	; stop recursion at wall or door cell
 	lda (LINE_PTR),y
@@ -604,7 +621,14 @@ print_msg:
 	inx
 	cpx #22
         bne @cloop
-@done:  rts
+        ; rebase screen codes to start from 128
+     	ldx #SCREEN_WIDTH-1
+@reloc: lda SCREEN,x
+	ora #$80
+	sta SCREEN,x
+	dex
+	bpl @reloc
+	rts
 
 	;*****************************************************************
 	; clears the screen
@@ -714,3 +738,41 @@ youmiss:.byte	"YOU MISS.",0
 mondie:	.byte	"THE XXX IS DEAD!",0
 opened:	.byte	"OPENED.",0
 blocked:.byte	"BLOCKED.",0
+
+	; user defined chars
+charset:.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; wall
+	.byte $00,$00,$00,$00,$00,$18,$18,$00	; .
+	.byte $18,$18,$18,$18,$00,$00,$18,$00	; !
+	.byte $18,$3e,$60,$3c,$06,$7c,$18,$00	; $
+	.byte $00,$66,$3c,$ff,$3c,$66,$00,$00	; *
+	.byte $ff-$00,$ff-$18,$ff-$18,$ff-$7e,$ff-$18,$ff-$18,$ff-$00,$ff-$00	; + reversed
+	.byte $70,$18,$0c,$06,$0c,$18,$70,$00	; >
+	.byte $3c,$66,$6e,$6e,$60,$62,$3c,$00	; @ (player)
+	.byte $00,$60,$60,$7c,$66,$66,$7c,$00	; b
+	.byte $00,$00,$7c,$66,$60,$60,$60,$00	; r
+	.byte $00,$00,$3e,$60,$3c,$06,$7c,$00	; s
+	.byte $00,$00,$3c,$66,$66,$66,$3c,$00	; o
+	.byte $00,$00,$7e,$0c,$18,$30,$7e,$00	; z
+	.byte $3c,$66,$60,$3c,$06,$66,$3c,$00	; S
+	.byte $3c,$66,$6e,$6e,$60,$62,$3c,$00	; @ (wizard)
+	.byte $66,$66,$3c,$18,$3c,$66,$66,$00	; X
+	.byte $78,$6c,$66,$66,$66,$6c,$78,$00	; D
+charset_end:
+
+colors:	.byte COLOR_CYAN			; wall
+	.byte COLOR_CYAN			; .
+	.byte COLOR_PURPLE			; !
+	.byte COLOR_YELLOW			; $
+	.byte COLOR_RED				; *
+	.byte COLOR_CYAN			; +
+	.byte COLOR_CYAN			; >
+	.byte COLOR_WHITE			; @ (player)
+	.byte COLOR_RED				; b
+	.byte COLOR_RED				; r
+	.byte COLOR_GREEN			; s
+	.byte COLOR_GREEN			; o
+	.byte COLOR_WHITE			; z
+	.byte COLOR_GREEN			; S
+	.byte COLOR_PURPLE			; @ (wizard)
+	.byte COLOR_YELLOW			; X
+	.byte COLOR_RED				; D

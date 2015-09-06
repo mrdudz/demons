@@ -32,16 +32,17 @@ monsters:
 - wounded monsters can be visualized with red color
 - monster ai: fullscreen pass that updates screen ram
 - monster types:
-	- BAT
-	- RAT
-	- SNAKE: poisons
-	- SPIDER: webs
-	- ORC
-	- UNDEAD
-	- SLIME: slimes don't move, they spread to adjacent cells
-	- WIZARD: wizards can teleport and shoot lightning bolts
-	- DEMON: demons are immune to normal weapons
-	- DRAGON
+	- BAT: red 'b'
+	- RAT: red 'r'
+	- SNAKE: green 's'  poisons
+	- ORC: green 'o'
+	- UNDEAD: white 'z'
+	- STALKER: white ' ', invisible except for void
+	- SLIME: green 'S' slimes don't move, they spread to adjacent cells
+	- WIZARD: purple '@' wizards can teleport and shoot lightning bolts
+	- DEMON: yellow 'X' demons are immune to normal weapons
+	- DRAGON: red 'D'
+
 - monster flags:
 	- MF_TOUGH			= 1	; when a hit would kill the monster, it is wounded instead (turns red)
 	- MF_DROP_SCROLL	= 2
