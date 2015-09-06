@@ -18,6 +18,7 @@
 	GETIN		= $ffe4
 	LINE_PTR	= $d1		; pointer to current line is stored in $d1-$d2
 	CURSOR_X	= $d3
+	CURSOR_Y	= $d6
 	CUR_COLOR	= $0286
 
 	; char codes
@@ -35,7 +36,7 @@
 	CHR_RIGHT	= 29
 	CHR_HOME	= 19
 	CHR_CLR_HOME	= 147
-	CHR_FLOOR	= 32
+	CHR_FLOOR	= 46
 	CHR_WALL	= 166
 	CHR_PLAYER	= 64
 	CHR_ENEMY	= 113
@@ -45,7 +46,7 @@
 	CHR_RVS_OFF	= 146
 
 	; screen codes
-	SCR_FLOOR	= 32
+	SCR_FLOOR	= 46
 	SCR_WALL	= 102
 	SCR_STAIRS	= 62
 	SCR_DOOR	= 43+$80
@@ -59,11 +60,14 @@
 	COLOR_GREEN	= 5
 	COLOR_BLUE	= 6
 	COLOR_YELLOW	= 7
+	COLOR_UNSEEN	= COLOR_BLACK
+	COLOR_EXPLORED	= COLOR_CYAN
 
 	; zero page variables
 	PX		= $10
 	PY		= $11
 	RNDLOC_TMP	= $12
+	COLOR_PTR	= $13		; $13-$14 = pointer to current line in color ram
 
 	; VIC registers
 	VIC_SCR_COLORS	= $900F
@@ -89,12 +93,15 @@ bend:	.word 0           		; end of program
 
 start:	lda #8
 	sta VIC_SCR_COLORS
-	lda #COLOR_CYAN
-	sta CUR_COLOR
 	lda #$80			; turn on key repeat for all keys
 	sta $028a		
 
 	jsr random_level
+
+	; reveal first area
+	ldy PX
+	ldx PY
+	jsr reveal_area
 
 	; draw welcome message
         ldx #<welcome
@@ -104,6 +111,10 @@ start:	lda #8
 mainloop:
 	jsr waitkey
 	jsr update_player
+
+	ldy PX
+	ldx PY
+	jsr reveal_area
 
 	; test extract bits
 	.if 0
@@ -125,6 +136,9 @@ mainloop:
 
 random_level:
 	jsr clearscreen
+
+	lda #COLOR_UNSEEN
+	sta CUR_COLOR
 
 	; init walker
 	; X,Y = x,y
@@ -204,8 +218,6 @@ init_player:
 	ldy #11
 	stx PY
 	sty PX
-	lda #COLOR_WHITE
-	sta CUR_COLOR
 	lda #CHR_PLAYER
 	jsr plot
 	rts
@@ -255,7 +267,7 @@ update_player:
 	; move player to X,Y
 	sty PX			; store new pos
 	stx PY
-	lda #COLOR_WHITE
+	lda #COLOR_UNSEEN ;;WHITE
 	sta CUR_COLOR
 	lda #CHR_PLAYER
 	jsr plot		; draw player at new pos
@@ -272,8 +284,11 @@ update_player:
 	rts
 
 @open_door:
+	lda #COLOR_UNSEEN
+	sta CUR_COLOR
 	lda #CHR_FLOOR
 	jsr plot
+	jsr reveal_area
         ldx #<opened
         ldy #>opened
         jsr print_msg
@@ -310,6 +325,8 @@ player_attack:
 	tay
 	pla
 	tax
+	lda #COLOR_EXPLORED
+	sta CUR_COLOR
 	lda #CHR_FLOOR			; remove monster
 	jsr plot
 	ldx #<mondie
@@ -322,8 +339,6 @@ player_attack:
 	;*****************************************************************
 
 init_enemies:
-	lda #COLOR_GREEN
-	sta CUR_COLOR
 	lda #ENEMY_COUNT
 	sta $0
 @loop:	jsr randomloc
@@ -384,7 +399,7 @@ init_doors:
 
 @doorbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
 @doorbits_end: 
-@doort: .byte CHR_RVS_ON,CHR_CYAN,CHR_DOOR,CHR_RVS_OFF,0
+@doort: .byte CHR_RVS_ON,CHR_DOOR,CHR_RVS_OFF,0
 
 	;*****************************************************************
 	; returns a bitmask encoding the walls of eight adjacent cells at cursor pos
@@ -425,6 +440,64 @@ extract_bits:
 @dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
 
 	;*****************************************************************
+	; reveal area, in: X,Y = row,col
+	;*****************************************************************
+
+reveal_area:
+	jsr move
+
+	; limit recursion depth (avoids stack overflow and also limits visibility somewhat)
+	tsx
+	cpx #$c0
+	bcc @done
+	ldx CURSOR_Y
+
+	; fetch cell color, stop recursion if cell already revealed
+	lda (COLOR_PTR),y
+	and #7			; color ram is 4-bit wide, high nibble contains garbage
+	cmp #COLOR_UNSEEN
+	bne @done
+	; reveal cell
+	lda #COLOR_EXPLORED
+	sta (COLOR_PTR),y
+	lda (LINE_PTR),y
+	; stop recursion at wall or door cell
+	cmp #SCR_WALL
+	beq @done
+	cmp #SCR_DOOR
+	beq @done
+
+	txa			; save X,Y
+	pha
+	tya
+	pha
+
+	; recurse into neighbor cells
+	dex			; up
+	jsr reveal_area
+	iny			; right
+	jsr reveal_area
+	inx			; down
+	jsr reveal_area
+	inx			; down
+	jsr reveal_area
+	dey			; left
+	jsr reveal_area
+	dey			; left
+	jsr reveal_area
+	dex			; up
+	jsr reveal_area
+	dex			; up
+	jsr reveal_area
+
+	pla			; restore X,Y
+	tay
+	pla
+	tax
+
+@done:	rts
+
+	;*****************************************************************
 	; moves cursor to row X, column Y
 	;*****************************************************************
 
@@ -435,6 +508,12 @@ move:	pha		; store A,X,Y
 	pha
 	clc
 	jsr PLOT	; trashes A,X,Y
+	lda LINE_PTR	; update color pointer
+	sta COLOR_PTR
+	lda LINE_PTR+1
+	clc
+	adc #$96-$1e
+	sta COLOR_PTR+1
 	pla		; restore A,X,Y
 	tay
 	pla
@@ -502,11 +581,11 @@ print_msg:
         jsr print
         ; clear rest of the line
         lda #32
-@cloop: ldx CURSOR_X
+        ldx CURSOR_X
+@cloop: sta SCREEN,x
+	inx
 	cpx #22
-        beq @done
-        jsr CHROUT
-        jmp @cloop
+        bne @cloop
 @done:  rts
 
 	;*****************************************************************
@@ -522,7 +601,7 @@ clearscreen:
 @loop:	lda #SCR_WALL
 	sta SCREEN,x
 	sta SCREEN+$100,x
-	lda #COLOR_CYAN		; color
+	lda #COLOR_UNSEEN
 	sta COLOR_RAM,x
 	sta COLOR_RAM+$100,x
 	inx
