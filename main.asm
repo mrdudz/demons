@@ -10,8 +10,9 @@
 	SCREEN_WIDTH	= 22
 	SCREEN_HEIGHT	= 23
 	INITIAL_HP	= 6
+	MAX_ENEMIES	= 16
 	DEBUG		= 0		; set to 0 for strip debug code
-	MUSIC		= 1
+	MUSIC		= 0
 
 	; kernal routines
 	CHROUT		= $ffd2
@@ -102,19 +103,23 @@
 	COLOR_PTR	= $13		; $13-$14 = pointer to current line in color ram
 	CUR_NAME	= $15		; current monster/item index for print
 	DUNGEON_LEVEL	= $16
-	POTIONS_FOUND	= SCREEN+22*22+8
-	GEMS_FOUND	= POTIONS_FOUND+3
-	SCROLLS_FOUND	= GEMS_FOUND+3
-	SKULLS_FOUND	= SCROLLS_FOUND+3
-	GOLD_FOUND	= $1b
+	GOLD		= $1b
 	HP		= $1c
+
+	; misc data
+	ENEMY_X		= $0340		; tape buffer $033c-$03ff
+	ENEMY_Y		= $0350
+	POTIONS		= SCREEN+492	; item counts are stored in screen ram
+	GEMS		= POTIONS+3
+	SCROLLS		= GEMS+3
+	SKULLS		= SCROLLS+3
 
 	; VIC registers
 	VIC_SCR_COLORS	= $900F
 
 	.byt $01,$10			; PRG file header (starting address of the program)
 
-	.org    $1001			; start of basic program
+	.org $1001			; start of basic program
 
 	;*****************************************************************
 	; basic stub
@@ -152,25 +157,25 @@ start:	lda #8
 
 	; init status bar
 	lda #SCR_POTION
-	sta POTIONS_FOUND-1
+	sta POTIONS-1
 	lda #SCR_GEM
-	sta GEMS_FOUND-1
+	sta GEMS-1
 	lda #SCR_SCROLL
-	sta SCROLLS_FOUND-1
+	sta SCROLLS-1
 	lda #SCR_SKULL
-	sta SKULLS_FOUND-1
+	sta SKULLS-1
 	lda #COLOR_YELLOW
-	sta POTIONS_FOUND-SCREEN+COLOR_RAM-1
-	sta GEMS_FOUND-SCREEN+COLOR_RAM-1
-	sta SCROLLS_FOUND-SCREEN+COLOR_RAM-1
-	sta SKULLS_FOUND-SCREEN+COLOR_RAM-1
+	sta POTIONS-SCREEN+COLOR_RAM-1
+	sta GEMS-SCREEN+COLOR_RAM-1
+	sta SCROLLS-SCREEN+COLOR_RAM-1
+	sta SKULLS-SCREEN+COLOR_RAM-1
 
 	lda #'0'+$80			; init vars
-	sta POTIONS_FOUND
-	sta GEMS_FOUND
-	sta SCROLLS_FOUND
-	sta SKULLS_FOUND
-	sta GOLD_FOUND
+	sta POTIONS
+	sta GEMS
+	sta SCROLLS
+	sta SKULLS
+	sta GOLD
 
 	lda #1
 	sta DUNGEON_LEVEL
@@ -212,6 +217,8 @@ mainloop:
 	ldx PY
 	jsr reveal_area
 
+	jsr update_enemies
+
 	; test extract bits
 	.if 0
 	ldy PX
@@ -229,7 +236,8 @@ mainloop:
 	;*****************************************************************
 	; include other source files
 	;*****************************************************************
-	
+
+	.include "enemy.asm"	
 	.if MUSIC
 	.include "music.asm"
 	.endif
@@ -310,7 +318,7 @@ random_level:
 @done:	jsr init_doors
 	jsr init_player
 	jsr init_stairs
-	jsr init_spawns
+	jsr init_enemies
 	rts
 
 	;*****************************************************************
@@ -418,10 +426,10 @@ pickup_item:
 	tax
 	lda mul3-SCR_POTION,x
 	tax				; X = item type * 3
-	lda POTIONS_FOUND,x
+	lda POTIONS,x
 	cmp #'9'+$80			; max 9 items per type
 	beq @skip
-	inc POTIONS_FOUND,x 		
+	inc POTIONS,x 		
 @skip:	ldx #<found			; print found
 	ldy #>found
 	jsr print_msg
@@ -459,37 +467,10 @@ player_attack:
 	tay
 	pla
 	tax
-	lda #COLOR_EXPLORED
-	sta CUR_COLOR
-	lda #CHR_FLOOR			; remove monster
-	jsr plot
+	jsr remove_enemy
 	ldx #<mondie
 	ldy #>mondie
 	jsr print_msg
-	rts
-
-	;*****************************************************************
-	; initialize spawns (enemies, items)
-	;*****************************************************************
-
-init_spawns:
-	lda DUNGEON_LEVEL
-	lsr
-	clc
-	adc #4
-	sta $0			; count = level/2 + 4
-@loop:	jsr randomloc
-	jsr move
-	jsr rand8
-	and #7
-	clc
-	adc DUNGEON_LEVEL
-	tay
-	dey			; Y = rand8 & 7 + level - 1
-	lda spawns,y
-	jsr CHROUT
-	dec $0
-	bne @loop
 	rts
 
 	;*****************************************************************
@@ -965,10 +946,3 @@ colors:	.byte COLOR_CYAN			; # wall
 	.byte COLOR_GREEN			; S slime
 	.byte COLOR_PURPLE			; @ wizard
 	.byte COLOR_YELLOW			; D demon
-
-	; random spawns, indexed with rand8() & 7 + level - 1
-spawns:	;.byte CHR_POTION,CHR_POTION,CHR_GEM,CHR_GEM,CHR_SCROLL,CHR_SCROLL,CHR_SKULL	; test
-	.byte CHR_BAT,CHR_RAT,CHR_RAT,CHR_RAT,CHR_POTION,CHR_GOLD,CHR_SNAKE
-	.byte CHR_RAT,CHR_SNAKE,CHR_SNAKE,CHR_BAT,CHR_POTION,CHR_GOLD,CHR_SKULL
-	.byte CHR_ORC,CHR_ORC,CHR_UNDEAD,CHR_POTION,CHR_UNDEAD,CHR_STALKER,CHR_SKULL
-	.byte CHR_POTION,CHR_SLIME,CHR_WIZARD,CHR_WIZARD
