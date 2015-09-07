@@ -144,7 +144,17 @@ start:	lda #8
 	ldx #<welcome
 	ldy #>welcome
 	jsr print_msg
-	
+
+	; dump charset
+	.if 0
+	ldx #0
+@loop:  txa
+	sta SCREEN,x
+	inx
+	cpx #20
+	bne @loop
+	.endif
+
 mainloop:
 	jsr waitkey
 	jsr update_player
@@ -787,21 +797,21 @@ names:  ;.byte "WALL",0,0,0,0
 	; user defined chars
 charset:.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
 	.byte $00,$00,$00,$00,$00,$18,$18,$00	; . floor
-	.byte $ff,$e7,$e7,$81,$e7,$e7,$ff,$ff	; + door
+	.byte $ff,$f7,$f7,$c1,$f7,$f7,$ff,$ff	; + door
 	.byte $70,$18,$0c,$06,$0c,$18,$70,$00	; > stairs
-	.byte $3c,$66,$6e,$6e,$60,$62,$3c,$00	; @ player
-	.byte $18,$18,$18,$18,$00,$00,$18,$00	; ! potion
-	.byte $18,$3e,$60,$3c,$06,$7c,$18,$00	; $ gold
-	.byte $00,$66,$3c,$ff,$3c,$66,$00,$00	; * skull
-	.byte $00,$60,$60,$7c,$66,$66,$7c,$00	; b bat
-	.byte $00,$00,$7c,$66,$60,$60,$60,$00	; r rat
-	.byte $00,$00,$3e,$60,$3c,$06,$7c,$00	; s snake
-	.byte $00,$00,$3c,$66,$66,$66,$3c,$00	; o orc
-	.byte $00,$00,$7e,$0c,$18,$30,$7e,$00	; z undead
+	.byte $1c,$22,$4a,$56,$4c,$20,$1e,$00	; @ player
+	.byte $08,$08,$08,$08,$00,$00,$08,$00	; ! potion
+	.byte $08,$1e,$28,$1c,$0a,$3c,$08,$00	; $ gold
+	.byte $08,$2a,$1c,$3e,$1c,$2a,$08,$00	; * skull
+	.byte $40,$40,$5c,$62,$42,$62,$5c,$00	; b bat
+	.byte $00,$00,$5c,$62,$40,$40,$40,$00	; r rat
+	.byte $00,$00,$3e,$40,$3c,$02,$7c,$00	; s snake
+	.byte $00,$00,$3c,$42,$42,$42,$3c,$00	; o orc
+	.byte $00,$00,$7e,$04,$18,$20,$7e,$00	; z undead
 	.byte $00,$00,$00,$00,$00,$00,$00,$00	;   stalker
-	.byte $3c,$66,$60,$3c,$06,$66,$3c,$00	; S slime
-	.byte $3c,$66,$6e,$6e,$60,$62,$3c,$00	; @ wizard
-	.byte $78,$6c,$66,$66,$66,$6c,$78,$00	; D demon
+	.byte $3c,$42,$40,$3c,$02,$42,$3c,$00	; S slime
+	.byte $1c,$22,$4a,$56,$4c,$20,$1e,$00	; @ wizard
+	.byte $78,$24,$22,$22,$22,$24,$78,$00	; D demon
 charset_end:
 
 colors:	.byte COLOR_CYAN			; # wall
