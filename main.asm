@@ -38,40 +38,40 @@
 	CHR_CLR_HOME	= 147
 	CHR_WALL	= 64
 	CHR_FLOOR	= 65
-	CHR_POTION	= 66
-	CHR_GOLD	= 67
-	CHR_STAR	= 68
-	CHR_DOOR	= 69
-	CHR_STAIRS	= 70
-	CHR_PLAYER	= 71
+	CHR_DOOR	= 66
+	CHR_STAIRS	= 67
+	CHR_PLAYER	= 68
+	CHR_POTION	= 69
+	CHR_GOLD	= 70
+	CHR_SKULL	= 71
 	CHR_BAT		= 72
 	CHR_RAT		= 73
 	CHR_SNAKE	= 74
 	CHR_ORC		= 75
 	CHR_UNDEAD	= 76
-	CHR_SLIME	= 77
-	CHR_WIZARD	= 78
-	CHR_DEMON	= 79
-	CHR_DRAGON	= 80
+	CHR_STALKER	= 77
+	CHR_SLIME	= 78
+	CHR_WIZARD	= 79
+	CHR_DEMON	= 80
 
 	; screen codes
 	SCR_WALL	= 0
 	SCR_FLOOR	= 1
-	SCR_POTION	= 2
-	SCR_GOLD	= 3
-	SCR_STAR	= 4
-	SCR_DOOR	= 5
-	SCR_STAIRS	= 6
-	SCR_PLAYER	= 7
+	SCR_DOOR	= 2
+	SCR_STAIRS	= 3
+	SCR_PLAYER	= 4
+	SCR_POTION	= 5
+	SCR_GOLD	= 6
+	SCR_SKULL	= 7
 	SCR_BAT		= 8
 	SCR_RAT		= 9
 	SCR_SNAKE	= 10
 	SCR_ORC		= 11
 	SCR_UNDEAD	= 12
-	SCR_SLIME	= 13
-	SCR_WIZARD	= 14
-	SCR_DEMON	= 15
-	SCR_DRAGON	= 16
+	SCR_STALKER	= 13
+	SCR_SLIME	= 14
+	SCR_WIZARD	= 15
+	SCR_DEMON	= 16
 
 	; color codes
 	COLOR_BLACK	= 0
@@ -90,6 +90,7 @@
 	PY		= $11
 	RNDLOC_TMP	= $12
 	COLOR_PTR	= $13		; $13-$14 = pointer to current line in color ram
+	CUR_NAME	= $15		; current monster/item index for print
 
 	; VIC registers
 	VIC_SCR_COLORS	= $900F
@@ -130,7 +131,7 @@ start:	lda #8
 	bne @copy
 
 	lda #CHR_CLR_HOME		; clear screen
-      	jsr CHROUT
+	jsr CHROUT
 
 	jsr random_level
 
@@ -140,10 +141,10 @@ start:	lda #8
 	jsr reveal_area
 
 	; draw welcome message
-        ldx #<welcome
-        ldy #>welcome
-        jsr print_msg
-
+	ldx #<welcome
+	ldy #>welcome
+	jsr print_msg
+	
 mainloop:
 	jsr waitkey
 	jsr update_player
@@ -314,9 +315,9 @@ update_player:
 	rts
 
 @blocked:
-        ldx #<blocked
-        ldy #>blocked
-        jsr print_msg
+	ldx #<blocked
+	ldy #>blocked
+	jsr print_msg
 	rts
 
 @open_door:
@@ -325,15 +326,15 @@ update_player:
 	lda #CHR_FLOOR
 	jsr plot
 	jsr reveal_area
-        ldx #<opened
-        ldy #>opened
-        jsr print_msg
+	ldx #<opened
+	ldy #>opened
+	jsr print_msg
 	rts
 
 @enter_stairs:
-        ldx #<descend
-        ldy #>descend
-        jsr print_msg
+	ldx #<descend
+	ldy #>descend
+	jsr print_msg
 	jsr random_level
 	rts
 
@@ -342,20 +343,22 @@ update_player:
 	;*****************************************************************
 
 player_attack:
+	lda (LINE_PTR),y
+	sta CUR_NAME			; store current monster
 	jsr rand8
 	cmp #128
 	bcc @hit
 	ldx #<youmiss
-        ldy #>youmiss
-        jsr print_msg
-        rts
+	ldy #>youmiss
+	jsr print_msg
+	rts
 @hit:	txa				; store X,Y
 	pha
 	tya
 	pha
 	ldx #<youhit
 	ldy #>youhit
-	jsr print_msg	
+	jsr print_msg
 	jsr waitkey
 	pla				; restore X,Y
 	tay
@@ -612,21 +615,46 @@ print_hex:
 print_msg:
 	stx $0
 	sty $1
-	ldy #0
+	ldx #0		; X = screen pos
+	ldy #0		; Y = text pos 
 @loop1: lda ($0),y
 	beq @chk
+	iny
+	cmp #'%'
+	beq @print_name
 	and #$ff-64	; char to screen code
 	ora #$80	; rebase screen codes to start from 128
-	sta SCREEN,y
-	iny
+	sta SCREEN,x
+	inx
 	bne @loop1
- 	; clear rest of the line
+	; clear rest of the line
 @loop2:	lda #32
-	sta SCREEN,y
-	iny
-@chk:	cpy #22
+	sta SCREEN,x
+	inx
+@chk:	cpx #22
 	bne @loop2
 @done:	rts
+
+	; prints monster/item name
+@print_name:
+	tya		; save Y
+	pha
+	lda CUR_NAME
+	asl
+	asl
+	asl
+	tay
+@mloop:	lda names-40,y
+	beq @mdone
+	iny
+	and #$ff-64	; char to screen code
+	ora #$80	; rebase screen codes to start from 128
+	sta SCREEN,x
+	inx
+	bne @mloop
+@mdone:	pla		; restore y
+	tay		
+	bne @loop1
 
 	;*****************************************************************
 	; clears the screen
@@ -729,48 +757,67 @@ waitkey:jsr GETIN
 	; data
 	;*****************************************************************
 
-welcome:.byte	"DEMONS OF DEX",0
-descend:.byte	"DESCENDING...",0
-youhit:	.byte	"YOU HIT THE XXX!",0
-youmiss:.byte	"YOU MISS.",0
-mondie:	.byte	"THE XXX IS DEAD!",0
-opened:	.byte	"OPENED.",0
-blocked:.byte	"BLOCKED.",0
+welcome:.byte "DEMONS OF DEX",0
+descend:.byte "DESCENDING...",0
+youhit:	.byte "YOU HIT THE %!",0
+youmiss:.byte "YOU MISS.",0
+mondie:	.byte "THE % IS DEAD!",0
+opened:	.byte "OPENED.",0
+blocked:.byte "BLOCKED.",0
+
+	; monster and item names (the unused bytes could be used to store variables)
+names:  ;.byte "WALL",0,0,0,0
+	;.byte "FLOOR",0,0,0
+	;.byte "DOOR",0,0,0,0
+	;.byte "STAIRS",0,0
+	;.byte "YOU",0,0,0,0,0
+	.byte "POTION",0,0
+	.byte "GOLD",0,0,0,0
+	.byte "SKULL",0,0,0
+	.byte "BAT",0,0,0,0,0
+	.byte "RAT",0,0,0,0,0
+	.byte "SNAKE",0,0,0
+	.byte "ORC", 0,0,0,0,0
+	.byte "UNDEAD",0,0
+	.byte "STALKER",0
+	.byte "SLIME",0,0,0
+	.byte "WIZARD",0,0
+	.byte "DEMON",0,0,0
 
 	; user defined chars
-charset:.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; wall
-	.byte $00,$00,$00,$00,$00,$18,$18,$00	; .
-	.byte $18,$18,$18,$18,$00,$00,$18,$00	; !
-	.byte $18,$3e,$60,$3c,$06,$7c,$18,$00	; $
-	.byte $00,$66,$3c,$ff,$3c,$66,$00,$00	; *
-	.byte $ff-$00,$ff-$18,$ff-$18,$ff-$7e,$ff-$18,$ff-$18,$ff-$00,$ff-$00	; + reversed
-	.byte $70,$18,$0c,$06,$0c,$18,$70,$00	; >
-	.byte $3c,$66,$6e,$6e,$60,$62,$3c,$00	; @ (player)
-	.byte $00,$60,$60,$7c,$66,$66,$7c,$00	; b
-	.byte $00,$00,$7c,$66,$60,$60,$60,$00	; r
-	.byte $00,$00,$3e,$60,$3c,$06,$7c,$00	; s
-	.byte $00,$00,$3c,$66,$66,$66,$3c,$00	; o
-	.byte $00,$00,$7e,$0c,$18,$30,$7e,$00	; z
-	.byte $3c,$66,$60,$3c,$06,$66,$3c,$00	; S
-	.byte $3c,$66,$6e,$6e,$60,$62,$3c,$00	; @ (wizard)
-	.byte $66,$66,$3c,$18,$3c,$66,$66,$00	; X
-	.byte $78,$6c,$66,$66,$66,$6c,$78,$00	; D
+charset:.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
+	.byte $00,$00,$00,$00,$00,$18,$18,$00	; . floor
+	.byte $ff,$e7,$e7,$81,$e7,$e7,$ff,$ff	; + door
+	.byte $70,$18,$0c,$06,$0c,$18,$70,$00	; > stairs
+	.byte $3c,$66,$6e,$6e,$60,$62,$3c,$00	; @ player
+	.byte $18,$18,$18,$18,$00,$00,$18,$00	; ! potion
+	.byte $18,$3e,$60,$3c,$06,$7c,$18,$00	; $ gold
+	.byte $00,$66,$3c,$ff,$3c,$66,$00,$00	; * skull
+	.byte $00,$60,$60,$7c,$66,$66,$7c,$00	; b bat
+	.byte $00,$00,$7c,$66,$60,$60,$60,$00	; r rat
+	.byte $00,$00,$3e,$60,$3c,$06,$7c,$00	; s snake
+	.byte $00,$00,$3c,$66,$66,$66,$3c,$00	; o orc
+	.byte $00,$00,$7e,$0c,$18,$30,$7e,$00	; z undead
+	.byte $00,$00,$00,$00,$00,$00,$00,$00	;   stalker
+	.byte $3c,$66,$60,$3c,$06,$66,$3c,$00	; S slime
+	.byte $3c,$66,$6e,$6e,$60,$62,$3c,$00	; @ wizard
+	.byte $78,$6c,$66,$66,$66,$6c,$78,$00	; D demon
 charset_end:
 
-colors:	.byte COLOR_CYAN			; wall
-	.byte COLOR_CYAN			; .
-	.byte COLOR_PURPLE			; !
-	.byte COLOR_YELLOW			; $
-	.byte COLOR_RED				; *
-	.byte COLOR_CYAN			; +
-	.byte COLOR_CYAN			; >
-	.byte COLOR_WHITE			; @ (player)
-	.byte COLOR_RED				; b
-	.byte COLOR_RED				; r
-	.byte COLOR_GREEN			; s
-	.byte COLOR_GREEN			; o
-	.byte COLOR_WHITE			; z
-	.byte COLOR_GREEN			; S
-	.byte COLOR_PURPLE			; @ (wizard)
-	.byte COLOR_YELLOW			; X
-	.byte COLOR_RED				; D
+colors:	.byte COLOR_CYAN			; # wall
+	.byte COLOR_CYAN			; . floor
+	.byte COLOR_CYAN			; + door
+	.byte COLOR_CYAN			; > stairs
+	.byte COLOR_WHITE			; @ player
+	.byte COLOR_PURPLE			; ! potion
+	.byte COLOR_YELLOW			; $ gold
+	.byte COLOR_RED				; * skull
+	.byte COLOR_RED				; b bat
+	.byte COLOR_RED				; r rat
+	.byte COLOR_GREEN			; s snake
+	.byte COLOR_GREEN			; o orc
+	.byte COLOR_WHITE			; z undead
+	.byte COLOR_BLACK			;   stalker
+	.byte COLOR_GREEN			; S slime
+	.byte COLOR_PURPLE			; @ wizard
+	.byte COLOR_YELLOW			; D demon
