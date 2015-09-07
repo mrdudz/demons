@@ -9,7 +9,7 @@
 	COLOR_RAM	= $9600
 	SCREEN_WIDTH	= 22
 	SCREEN_HEIGHT	= 23
-	ENEMY_COUNT	= 3
+	INITIAL_HP	= 6
 	DEBUG		= 0		; set to 0 for strip debug code
 
 	; kernal routines
@@ -41,18 +41,22 @@
 	CHR_DOOR	= 66
 	CHR_STAIRS	= 67
 	CHR_PLAYER	= 68
-	CHR_POTION	= 69
-	CHR_GOLD	= 70
-	CHR_SKULL	= 71
-	CHR_BAT		= 72
-	CHR_RAT		= 73
-	CHR_SNAKE	= 74
-	CHR_ORC		= 75
-	CHR_UNDEAD	= 76
-	CHR_STALKER	= 77
-	CHR_SLIME	= 78
-	CHR_WIZARD	= 79
-	CHR_DEMON	= 80
+	CHR_HEART	= 69
+	CHR_HALF_HEART	= 70
+	CHR_POTION	= 71
+	CHR_GEM		= 72
+	CHR_SCROLL	= 73
+	CHR_SKULL	= 74
+	CHR_GOLD	= 75
+	CHR_BAT		= 76
+	CHR_RAT		= 77
+	CHR_SNAKE	= 78
+	CHR_ORC		= 79
+	CHR_UNDEAD	= 80
+	CHR_STALKER	= 81
+	CHR_SLIME	= 82
+	CHR_WIZARD	= 83
+	CHR_DEMON	= 84
 
 	; screen codes
 	SCR_WALL	= 0
@@ -60,18 +64,22 @@
 	SCR_DOOR	= 2
 	SCR_STAIRS	= 3
 	SCR_PLAYER	= 4
-	SCR_POTION	= 5
-	SCR_GOLD	= 6
-	SCR_SKULL	= 7
-	SCR_BAT		= 8
-	SCR_RAT		= 9
-	SCR_SNAKE	= 10
-	SCR_ORC		= 11
-	SCR_UNDEAD	= 12
-	SCR_STALKER	= 13
-	SCR_SLIME	= 14
-	SCR_WIZARD	= 15
-	SCR_DEMON	= 16
+	SCR_HEART	= 5
+	SCR_HALF_HEART	= 6
+	SCR_POTION	= 7
+	SCR_GEM		= 8
+	SCR_SCROLL	= 9
+	SCR_SKULL	= 10
+	SCR_GOLD	= 11
+	SCR_BAT		= 12
+	SCR_RAT		= 13
+	SCR_SNAKE	= 14
+	SCR_ORC		= 15
+	SCR_UNDEAD	= 16
+	SCR_STALKER	= 17
+	SCR_SLIME	= 18
+	SCR_WIZARD	= 19
+	SCR_DEMON	= 20
 
 	; color codes
 	COLOR_BLACK	= 0
@@ -86,11 +94,19 @@
 	COLOR_EXPLORED	= COLOR_CYAN
 
 	; zero page variables
+	TMP_PRINT	= $8		; $8-$9 = temp pointer for print_msg
 	PX		= $10
 	PY		= $11
 	RNDLOC_TMP	= $12
 	COLOR_PTR	= $13		; $13-$14 = pointer to current line in color ram
 	CUR_NAME	= $15		; current monster/item index for print
+	DUNGEON_LEVEL	= $16
+	POTIONS_FOUND	= SCREEN+22*22+8
+	GEMS_FOUND	= POTIONS_FOUND+3
+	SCROLLS_FOUND	= GEMS_FOUND+3
+	SKULLS_FOUND	= SCROLLS_FOUND+3
+	GOLD_FOUND	= $1b
+	HP		= $1c
 
 	; VIC registers
 	VIC_SCR_COLORS	= $900F
@@ -104,8 +120,8 @@
 	;*****************************************************************
 
 	; stub basic program
-	.word bend 			; next Line link
-	.word 2015        		; line number
+	.word bend 			; next line link
+	.word 666        		; line number
 	.byte $9e,52,49,48,57		; sys 4109
 	.byte 0           		; end of line
 bend:	.word 0           		; end of program
@@ -133,6 +149,33 @@ start:	lda #8
 	lda #CHR_CLR_HOME		; clear screen
 	jsr CHROUT
 
+	; init status bar
+	lda #SCR_POTION
+	sta POTIONS_FOUND-1
+	lda #SCR_GEM
+	sta GEMS_FOUND-1
+	lda #SCR_SCROLL
+	sta SCROLLS_FOUND-1
+	lda #SCR_SKULL
+	sta SKULLS_FOUND-1
+	lda #COLOR_YELLOW
+	sta POTIONS_FOUND-SCREEN+COLOR_RAM-1
+	sta GEMS_FOUND-SCREEN+COLOR_RAM-1
+	sta SCROLLS_FOUND-SCREEN+COLOR_RAM-1
+	sta SKULLS_FOUND-SCREEN+COLOR_RAM-1
+
+	lda #'0'+$80			; init vars
+	sta POTIONS_FOUND
+	sta GEMS_FOUND
+	sta SCROLLS_FOUND
+	sta SKULLS_FOUND
+	sta GOLD_FOUND
+
+	lda #1
+	sta DUNGEON_LEVEL
+	lda #INITIAL_HP
+	sta HP
+
 	jsr random_level
 
 	; reveal first area
@@ -144,6 +187,8 @@ start:	lda #8
 	ldx #<welcome
 	ldy #>welcome
 	jsr print_msg
+
+	jsr update_hp
 
 	; dump charset
 	.if 0
@@ -253,7 +298,7 @@ random_level:
 @done:	jsr init_doors
 	jsr init_player
 	jsr init_stairs
-	jsr init_enemies
+	jsr init_spawns
 	rts
 
 	;*****************************************************************
@@ -302,19 +347,21 @@ update_player:
 	jsr move
 	; check obstacle
 	lda (LINE_PTR),y
-	cmp #SCR_STAIRS
-	beq @enter_stairs	; allow moving into stairs
 	cmp #SCR_WALL
-	beq @blocked
+	beq blocked
+	cmp #SCR_STAIRS
+	beq enter_stairs
 	cmp #SCR_DOOR
-	beq @open_door
-	cmp #SCR_FLOOR
-	bne player_attack
+	beq open_door
+	cmp #SCR_BAT
+	bpl player_attack
+	cmp #SCR_POTION
+	bpl pickup_item
 
 	; move player to X,Y
-	sty PX			; store new pos
+movepl:	sty PX			; store new pos
 	stx PY
-	lda #COLOR_UNSEEN ;;WHITE
+	lda #COLOR_UNSEEN
 	sta CUR_COLOR
 	lda #CHR_PLAYER
 	jsr plot		; draw player at new pos
@@ -324,13 +371,13 @@ update_player:
 	jsr plot		; erase old player
 	rts
 
-@blocked:
-	ldx #<blocked
-	ldy #>blocked
+blocked:
+	ldx #<block
+	ldy #>block
 	jsr print_msg
 	rts
 
-@open_door:
+open_door:
 	lda #COLOR_UNSEEN
 	sta CUR_COLOR
 	lda #CHR_FLOOR
@@ -341,12 +388,38 @@ update_player:
 	jsr print_msg
 	rts
 
-@enter_stairs:
+enter_stairs:
 	ldx #<descend
 	ldy #>descend
 	jsr print_msg
+	inc DUNGEON_LEVEL
 	jsr random_level
 	rts
+
+pickup_item:
+	txa				; save X,Y
+	pha
+	tya
+	pha
+	lda (LINE_PTR),y		; store name
+	sta CUR_NAME
+	tax
+	lda mul3-SCR_POTION,x
+	tax				; X = item type * 3
+	lda POTIONS_FOUND,x
+	cmp #'9'+$80			; max 9 items per type
+	beq @skip
+	inc POTIONS_FOUND,x 		
+@skip:	ldx #<found			; print found
+	ldy #>found
+	jsr print_msg
+	pla				; restore X,Y
+	tay
+	pla
+	tax
+	jmp movepl
+
+mul3:	.byte 0,3,6,9
 
 	;*****************************************************************
 	; player attack, in: X,Y = target coordinates
@@ -362,7 +435,7 @@ player_attack:
 	ldy #>youmiss
 	jsr print_msg
 	rts
-@hit:	txa				; store X,Y
+@hit:	txa				; save X,Y
 	pha
 	tya
 	pha
@@ -384,15 +457,25 @@ player_attack:
 	rts
 
 	;*****************************************************************
-	; initialize enemies
+	; initialize spawns (enemies, items)
 	;*****************************************************************
 
-init_enemies:
-	lda #ENEMY_COUNT
-	sta $0
+init_spawns:
+	lda DUNGEON_LEVEL
+	lsr
+	clc
+	adc #4
+	sta $0			; count = level/2 + 4
 @loop:	jsr randomloc
-	lda #CHR_RAT
-	jsr plot
+	jsr move
+	jsr rand8
+	and #7
+	clc
+	adc DUNGEON_LEVEL
+	tay
+	dey			; Y = rand8 & 7 + level - 1
+	lda spawns,y
+	jsr CHROUT
 	dec $0
 	bne @loop
 	rts
@@ -623,11 +706,11 @@ print_hex:
 	;*****************************************************************
 
 print_msg:
-	stx $0
-	sty $1
+	stx TMP_PRINT
+	sty TMP_PRINT+1
 	ldx #0		; X = screen pos
 	ldy #0		; Y = text pos 
-@loop1: lda ($0),y
+@loop1: lda (TMP_PRINT),y
 	beq @chk
 	iny
 	cmp #'%'
@@ -654,7 +737,7 @@ print_msg:
 	asl
 	asl
 	tay
-@mloop:	lda names-40,y
+@mloop:	lda names-SCR_POTION*8,y
 	beq @mdone
 	iny
 	and #$ff-64	; char to screen code
@@ -667,6 +750,32 @@ print_msg:
 	bne @loop1
 
 	;*****************************************************************
+	; update hp
+	;*****************************************************************
+
+update_hp:
+	; clear old hearts
+	ldx #7
+@loop1: lda #32+$80
+	sta SCREEN+22*22-1,x
+	lda #COLOR_RED
+	sta COLOR_RAM+22*22-1,x
+	dex
+	bne @loop1
+	; draw hearts
+	lda HP
+	lsr		; lowest bit of hp goes to carry
+	tax		; does not affect carry
+	bcc @loop2 	; carry clear -> dont draw half heart
+	lda #SCR_HALF_HEART
+	sta SCREEN+22*22,x
+@loop2:	lda #SCR_HEART
+	sta SCREEN+22*22-1,x
+	dex
+	bne @loop2
+	rts
+
+	;*****************************************************************
 	; clears the screen
 	;*****************************************************************
 
@@ -676,10 +785,10 @@ clearscreen:
 	ldx #0
 @loop:	lda #SCR_WALL
 	sta SCREEN+22,x		; dont clear first line
-	sta SCREEN+$100,x
+	sta SCREEN+228,x	; dont clear last line
 	lda #COLOR_UNSEEN
-	sta COLOR_RAM+22,x	; dont clear first line
-	sta COLOR_RAM+$100,x
+	sta COLOR_RAM+22,x
+	sta COLOR_RAM+228,x
 	inx
 	bne @loop
 	rts
@@ -773,7 +882,8 @@ youhit:	.byte "YOU HIT THE %!",0
 youmiss:.byte "YOU MISS.",0
 mondie:	.byte "THE % IS DEAD!",0
 opened:	.byte "OPENED.",0
-blocked:.byte "BLOCKED.",0
+block:	.byte "BLOCKED.",0
+found:	.byte "FOUND %.",0
 
 	; monster and item names (the unused bytes could be used to store variables)
 names:  ;.byte "WALL",0,0,0,0
@@ -781,9 +891,13 @@ names:  ;.byte "WALL",0,0,0,0
 	;.byte "DOOR",0,0,0,0
 	;.byte "STAIRS",0,0
 	;.byte "YOU",0,0,0,0,0
+	;.byte "HEART",0,0,0
+	;.byte "HALF",0,0,0,0
 	.byte "POTION",0,0
-	.byte "GOLD",0,0,0,0
+	.byte "GEM",0,0,0,0,0
+	.byte "SCROLL",0,0
 	.byte "SKULL",0,0,0
+	.byte "GOLD",0,0,0,0
 	.byte "BAT",0,0,0,0,0
 	.byte "RAT",0,0,0,0,0
 	.byte "SNAKE",0,0,0
@@ -800,9 +914,13 @@ charset:.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
 	.byte $ff,$f7,$f7,$c1,$f7,$f7,$ff,$ff	; + door
 	.byte $70,$18,$0c,$06,$0c,$18,$70,$00	; > stairs
 	.byte $1c,$22,$4a,$56,$4c,$20,$1e,$00	; @ player
+	.byte $36,$7f,$7f,$7f,$3e,$1c,$08,$00	; (heart)
+	.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
 	.byte $08,$08,$08,$08,$00,$00,$08,$00	; ! potion
+	.byte $08,$2a,$1c,$3e,$1c,$2a,$08,$00	; * gem
+	.byte $3c,$42,$02,$0c,$10,$00,$10,$00	; ? scroll
+	.byte $30,$48,$48,$30,$4a,$44,$3a,$00	; & skull
 	.byte $08,$1e,$28,$1c,$0a,$3c,$08,$00	; $ gold
-	.byte $08,$2a,$1c,$3e,$1c,$2a,$08,$00	; * skull
 	.byte $40,$40,$5c,$62,$42,$62,$5c,$00	; b bat
 	.byte $00,$00,$5c,$62,$40,$40,$40,$00	; r rat
 	.byte $00,$00,$3e,$40,$3c,$02,$7c,$00	; s snake
@@ -817,11 +935,15 @@ charset_end:
 colors:	.byte COLOR_CYAN			; # wall
 	.byte COLOR_CYAN			; . floor
 	.byte COLOR_CYAN			; + door
-	.byte COLOR_CYAN			; > stairs
+	.byte COLOR_WHITE			; > stairs
 	.byte COLOR_WHITE			; @ player
-	.byte COLOR_PURPLE			; ! potion
+	.byte COLOR_RED				; (heart)
+	.byte COLOR_RED				; (half heart)
+	.byte COLOR_YELLOW			; ! potion
+	.byte COLOR_YELLOW			; * gem
+	.byte COLOR_YELLOW			; ? scroll
+	.byte COLOR_YELLOW			; & skull
 	.byte COLOR_YELLOW			; $ gold
-	.byte COLOR_RED				; * skull
 	.byte COLOR_RED				; b bat
 	.byte COLOR_RED				; r rat
 	.byte COLOR_GREEN			; s snake
@@ -831,3 +953,10 @@ colors:	.byte COLOR_CYAN			; # wall
 	.byte COLOR_GREEN			; S slime
 	.byte COLOR_PURPLE			; @ wizard
 	.byte COLOR_YELLOW			; D demon
+
+	; random spawns, indexed with rand8() & 7 + level - 1
+spawns:	;.byte CHR_POTION,CHR_POTION,CHR_GEM,CHR_GEM,CHR_SCROLL,CHR_SCROLL,CHR_SKULL	; test
+	.byte CHR_BAT,CHR_RAT,CHR_RAT,CHR_RAT,CHR_POTION,CHR_GOLD,CHR_SNAKE
+	.byte CHR_RAT,CHR_SNAKE,CHR_SNAKE,CHR_BAT,CHR_POTION,CHR_GOLD,CHR_SKULL
+	.byte CHR_ORC,CHR_ORC,CHR_UNDEAD,CHR_POTION,CHR_UNDEAD,CHR_STALKER,CHR_SKULL
+	.byte CHR_POTION,CHR_SLIME,CHR_WIZARD,CHR_WIZARD
