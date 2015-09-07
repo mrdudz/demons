@@ -576,7 +576,7 @@ print:	stx $0
 	beq @done
 	jsr CHROUT
 	iny
-	jmp @loop
+	bne @loop	; same as 'jmp @loop' but saves 1 byte
 @done:	rts
 
 	;*****************************************************************
@@ -605,30 +605,28 @@ print_hex:
 
 	;*****************************************************************
 	; prints message at the top of the screen
+	; this assumes that color codes of 1st line have been set to white!
 	; X,Y = address of text
 	;*****************************************************************
 
 print_msg:
-	lda #CHR_HOME
-	jsr CHROUT
-	lda #COLOR_WHITE
-	sta CUR_COLOR
-        jsr print
-        ; clear rest of the line
-        lda #32
-        ldx CURSOR_X
-@cloop: sta SCREEN,x
-	inx
-	cpx #22
-        bne @cloop
-        ; rebase screen codes to start from 128
-     	ldx #SCREEN_WIDTH-1
-@reloc: lda SCREEN,x
-	ora #$80
-	sta SCREEN,x
-	dex
-	bpl @reloc
-	rts
+	stx $0
+	sty $1
+	ldy #0
+@loop1: lda ($0),y
+	beq @chk
+	and #$ff-64	; char to screen code
+	ora #$80	; rebase screen codes to start from 128
+	sta SCREEN,y
+	iny
+	bne @loop1
+ 	; clear rest of the line
+@loop2:	lda #32
+	sta SCREEN,y
+	iny
+@chk:	cpy #22
+	bne @loop2
+@done:	rts
 
 	;*****************************************************************
 	; clears the screen
