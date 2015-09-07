@@ -25,24 +25,23 @@ level generation:
 - random walker carves tunnels, turns at map edges
 
 tiles:
-	- FLOOR
-	- WALL
-	- DOOR			; reveals next area, when opened, door is removed from the map
-	- SECRET_DOOR	; wall that can be walked through by player
-	- WATER			; only player can traverse water (only player can remember contents of cell)
-	- LAVA			; deals damage
-	- STAIRS		; descend to level below, one way (no going back to previous level)
-	- CHEST			; a chest contains a random item but may be trapped
-	- ARMOR			; brown = leather, green = cloak, grey = plate mail, blue = magic armor
-	- WEAPON		; dagger, sword, axe 
-	- ACCESSORY		; rings, amulets
+- FLOOR
+- WALL
+- DOOR			; reveals next area, when opened, door is removed from the map
+- SECRET_DOOR	; wall that can be walked through by player
+- WATER			; only player can traverse water (only player can remember contents of cell)
+- LAVA			; deals damage
+- STAIRS		; descend to level below, one way (no going back to previous level)
+- CHEST			; a chest contains a random item but may be trapped
+- ARMOR			; brown = leather, green = cloak, grey = plate mail, blue = magic armor
+- WEAPON		; dagger, sword, axe 
+- ACCESSORY		; rings, amulets
 
 monsters:
-- no per-instance data structures, state of object is coded into screen ram
-- monsters have no health! random chance of killing (affected by per-type armor rating)
+- monsters with no instance data = bad idea, fullscreen updates become hard
+- monster instance data (health, x, y) can be stored in tape buffer
 - monster variations: green orc, grey orc?
 - wounded monsters can be visualized with red color
-- monster ai: fullscreen pass that updates screen ram
 - monster types:
 	- BAT: red 'b'
 	- RAT: red 'r'
