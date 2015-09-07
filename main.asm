@@ -11,6 +11,7 @@
 	SCREEN_HEIGHT	= 23
 	INITIAL_HP	= 6
 	DEBUG		= 0		; set to 0 for strip debug code
+	MUSIC		= 1
 
 	; kernal routines
 	CHROUT		= $ffd2
@@ -176,6 +177,9 @@ start:	lda #8
 	lda #INITIAL_HP
 	sta HP
 
+	.if MUSIC
+	jsr init_music
+	.endif
 	jsr random_level
 
 	; reveal first area
@@ -221,6 +225,14 @@ mainloop:
 	.endif
 
 	jmp mainloop
+
+	;*****************************************************************
+	; include other source files
+	;*****************************************************************
+	
+	.if MUSIC
+	.include "music.asm"
+	.endif
 
 	;*****************************************************************
 	; random level generator
