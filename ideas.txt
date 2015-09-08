@@ -38,21 +38,18 @@ tiles:
 - ACCESSORY		; rings, amulets
 
 monsters:
-- monsters with no instance data = bad idea, fullscreen updates become hard
-- monster instance data (health, x, y) can be stored in tape buffer
-- monster variations: green orc, grey orc?
-- wounded monsters can be visualized with red color
-- monster types:
-	- BAT: red 'b'
-	- RAT: red 'r'
-	- SNAKE: green 's'  poisons
-	- ORC: green 'o'
-	- UNDEAD: white 'z'
-	- STALKER: white ' ', invisible except for void
-	- SLIME: green 'S' slimes don't move, they spread to adjacent cells
-	- WIZARD: purple '@' wizards can teleport and shoot lightning bolts
-	- DEMON: yellow 'X' demons are immune to normal weapons
-	- DRAGON: red 'D'
+- monsters are encoded into screen and color ram (no instance data)
+- bosses (only one per level) have health (BOSS_HEALTH var)
+- BAT: red 'b'
+- RAT: red 'r'
+- SNAKE: green 's'  poisons
+- ORC: green 'o'
+- UNDEAD: white 'z'
+- STALKER: white ' ', invisible except for void
+- SLIME: green 'S' slimes don't move, they spread to adjacent cells
+- WIZARD: purple '@' wizards can teleport and shoot lightning bolts
+- DEMON: yellow 'X' demons are immune to normal weapons
+- DRAGON: red 'D'
 
 - monster flags:
 	- MF_TOUGH			= 1	; when a hit would kill the monster, it is wounded instead (turns red)
@@ -69,6 +66,16 @@ monsters:
 	- byte armor		; how difficult it is to kill the monster
 	- byte speed		; how often monster is updated (every nth update)
 	- byte flags		; misc flags (special abilities)
+
+monster conditions:
+- encoded into color ram
+- monster is not considered to have condition if its native color matches with condition color?
+	- e.g. snakes are green and therefore don't have poisoned condition
+- wounded (red)
+- frozen/slowed (cyan), works with all monsters because no monster is cyan normally
+- poisoned (green):
+	- monster is only considered to be poisoned if its native color is not green
+	- orcs should probably be red...
 
 items:
 - scrolls & potions: effect is determined by color ram

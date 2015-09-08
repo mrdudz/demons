@@ -101,8 +101,6 @@
 	COLOR_EXPLORED	= COLOR_CYAN
 
 	; zero page variables
-	TMP_MX		= $6		; temp monster pos for enemy routines
-	TMP_MY		= $7
 	TMP_PRINT	= $8		; $8-$9 = temp pointer for print_msg
 	PX		= $10
 	PY		= $11
@@ -114,10 +112,12 @@
 	HP		= $1c
 	TURN		= $1d
 	MSG_TIME	= $1e		; last time print message was called
+	MON_X		= $20		; current monster position
+	MON_Y		= $21
+	MON_COLOR	= $23
 
 	; misc data
-	ENEMY_X		= $0340		; tape buffer $033c-$03ff
-	ENEMY_Y		= $0350
+	BLOCKED_CELLS	= $033c		; 22 bytes (tape buffer $033c-$03ff)
 	POTIONS		= SCREEN+492	; item counts are stored in screen ram
 	GEMS		= POTIONS+3
 	SCROLLS		= GEMS+3
@@ -499,21 +499,12 @@ move:	pha		; store A,X,Y
 	pha
 	clc
 	jsr PLOT	; trashes A,X,Y
-	lda LINE_PTR	; update color pointer
+	lda LINE_PTR
 	sta COLOR_PTR
 	lda LINE_PTR+1
 	clc
 	adc #$96-$1e
 	sta COLOR_PTR+1
-	; update screen ptr (line ptr + cursx)
-	; clc
-	; lda LINE_PTR
-	; adc CURSOR_X
-	; sta SCREEN_PTR
-	; lda LINE_PTR+1
-	; adc #0
-	; sta SCREEN_PTR+1
-	;
 	pla		; restore A,X,Y
 	tay
 	pla

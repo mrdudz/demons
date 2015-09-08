@@ -131,27 +131,27 @@ player_attack:
 	ldx #<youmiss
 	ldy #>youmiss
 	bne @pr				; same as 'jmp @pr' but saves 1 byte
- @hit:	stx TMP_MY			; save X,Y
-	sty TMP_MX
+ @hit:	stx MON_Y			; save X,Y
+	sty MON_X
 	ldx #<youhit
 	ldy #>youhit
 	jsr print_msg
-	ldx TMP_MY			; restore X,Y
-	ldy TMP_MX
+	ldx MON_Y			; restore X,Y
+	ldy MON_X
 	jsr damage_flash
 	jsr remove_enemy
 	; drop loot
 	jsr rand8
 	cmp #LOOT_DROP
 	bcs @noloot
-	ldx TMP_MY			; restore X,Y
-	ldy TMP_MX
+	ldx MON_Y			; restore X,Y
+	ldy MON_X
 	jsr random_loot
 	; set loot color
 	and #$ff-64
 	tay
 	lda colors-SCR_WALL,y
-	ldy TMP_MX
+	ldy MON_X
 	sta (COLOR_PTR),y
 @noloot:ldx #<mondie
 	ldy #>mondie

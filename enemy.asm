@@ -3,13 +3,6 @@
 	;*****************************************************************
 
 init_enemies:
-	; clear monsters
-	ldx #MAX_ENEMIES*2
-	lda #0
-@clear:	sta ENEMY_X-1,x
-	dex
-	bne @clear
-
 	lda DUNGEON_LEVEL
 	lsr
 	clc
@@ -17,14 +10,6 @@ init_enemies:
 	sta $0			; $0 = spawn count = level/2 + 4
 @loop:	jsr randomloc
 	jsr move
-	; store x,y to enemy table
-	ldx $0			; X = monster index (1-based)
-	tya
-	sta ENEMY_X-1,x
-	lda CURSOR_Y
-	sta ENEMY_Y-1,x
-	tax
-	;
 	jsr rand8
 	and #7
 	clc
@@ -33,7 +18,6 @@ init_enemies:
 	dey			; Y = rand8 & 7 + level - 1
 	lda spawns,y
 	jsr CHROUT
-
 @skip:	dec $0
 	bne @loop
 	rts
@@ -43,25 +27,33 @@ init_enemies:
 	;*****************************************************************
 
 update_enemies:
-	lda #MAX_ENEMIES-1
-	sta $0			; $0 = counter
-@loop:	ldy $0
-	ldx ENEMY_Y,y		; X = row
-	beq @skip		; skip if enemy slot unused
-	lda ENEMY_X,y
-	tay			; Y = column
-	jsr move
-	lda (LINE_PTR),y	; store monster name for printing
-	sta CUR_NAME
+	ldx #2			; X = row
+@yloop:	ldy #1			; Y = column
+@xloop: jsr move
+	lda (LINE_PTR),y
+	cmp #SCR_BAT
+	bmi @skip		; skip non-enemy cells
+	sta CUR_NAME		; store monster
+	stx MON_Y
+	sty MON_X
 	lda (COLOR_PTR),y
 	and #7
-	cmp #COLOR_UNSEEN
-	beq @skip		; skip unseen enemies
-	stx TMP_MY		; store current pos of monster
-	sty TMP_MX
-	jsr move_towards
-@skip:	dec $0
-	bpl @loop
+	sta MON_COLOR
+	cmp #COLOR_UNSEEN	; skip unseen cells
+	beq @skip
+	lda BLOCKED_CELLS,y
+	beq @skipb		; skip monsters in 'blocked' cells
+	; monster is in a blocked cell (downward movement) -> unblock cell and skip update
+	lda #0
+	sta BLOCKED_CELLS,y
+	beq @skip		; always branches
+@skipb:	jsr move_towards
+@skip:	iny
+	cpy #21
+	bne @xloop
+	inx			; next row
+	cpx #21
+	bne @yloop
 	rts
 
 	;*****************************************************************
@@ -69,36 +61,45 @@ update_enemies:
 	;*****************************************************************
 
 move_towards:
-	cpx PY
+	; move up
+	cpx PY			
 	bmi @skip1
 	beq @skip1
-	ldx #0			; move up
+	ldx #0			
 	jsr move_enemy
 	bcc @done		; done if moved
-@skip1: cpy PX
+@skip1: ; move right
+	cpy PX			
 	bpl @skip2
 	beq @skip2
-	ldx #1			; move right
+	ldx #1			
 	jsr move_enemy
-	bcc @done		; done if moved
-@skip2:	cpx PY
+	bcs @skip2
+	; moving right is tricky: skip next cell to prevent monster getting updated twice
+	iny
+	rts
+@skip2:	; move down
+	cpx PY			
 	bpl @skip3
 	beq @skip3
-	ldx #2			; move down
+	ldx #2			
 	jsr move_enemy
-	bcc @done		; done if moved
-@skip3:	cpy PX
+	bcs @skip3		; done if moved
+	; moving down is tricky: we have to mark the cell to prevent monster getting updated again in same turn
+	lda #$ff
+	sta BLOCKED_CELLS,y
+	rts
+@skip3:	; move left
+	cpy PX			
 	bmi @done
 	beq @done
-	ldx #3			; move left
+	ldx #3			
 	jsr move_enemy
 @done:	rts
 
 	;*****************************************************************
 	; moves enemy at cursor towards a direction, in:
-	; cursor at enemy
-	; $0 = enemy
-	;  X = direction (0=up, 1=right, 2=down, 3=left)
+	; X = direction (0=up, 1=right, 2=down, 3=left)
 	;*****************************************************************
 
 move_enemy:
@@ -115,41 +116,25 @@ move_enemy:
 	and #7
 	cmp #COLOR_UNSEEN
 	beq @block		; can't move to unseen cells
-	; update enemy coords
-	tya
-	ldy $0
-	sta ENEMY_X,y
-	lda CURSOR_Y
-	sta ENEMY_Y,y
-	; move cursor back
-	txa
-	ldy TMP_MX
-	ldx TMP_MY
+	; draw monster to new cell
+	lda MON_COLOR
+	sta CUR_COLOR
+	lda CUR_NAME
+	ora #64			; scr code -> char code
+	jsr CHROUT
+	; clear monster from old cell
+	ldx MON_Y
+	ldy MON_X
 	jsr move
-	tax
-	; save old char and color
-	lda (LINE_PTR),y	
-	pha			; save char
-	lda (COLOR_PTR),y
-	pha			; save color
-	; clear monster
 	lda #SCR_FLOOR
 	sta (LINE_PTR),y
 	lda #COLOR_EXPLORED
 	sta (COLOR_PTR),y
-	; draw monster
-	lda @dirs,x		; move cursor to target cell
-	jsr CHROUT
-	pla			; restore color
-	sta CUR_COLOR
-	pla			; restore char
-	ora #64
-	jsr CHROUT
-@done:	clc			; success => clear carry
+	clc			; success => clear carry
 	rts
 
-@block: ldy TMP_MX		; move cursor back
-	ldx TMP_MY
+@block: ldy MON_X		; move cursor back
+	ldx MON_Y
 	jsr move
 	sec			; blocked => set carry
 	rts
@@ -168,8 +153,7 @@ enemy_attack:
 	ldx #<monmiss
 	ldy #>monmiss
 	jsr print_msg
-	clc
-	rts
+	jmp @end
 @hit:	; hit
 	ldx #<monhit
 	ldy #>monhit
@@ -179,7 +163,9 @@ enemy_attack:
 	jsr move
 	jsr damage_flash
 	jsr player_damage
-@end:	clc			; success => clear carry
+@end:	ldx MON_Y		; restore X,Y
+	ldy MON_X
+	clc			; success => clear carry
 	rts
 
 	;*****************************************************************
@@ -191,34 +177,7 @@ remove_enemy:
 	sta CUR_COLOR
 	lda #CHR_FLOOR
 	jsr plot
-	jsr enemy_at
-	lda #0
-	sta ENEMY_X,x
-	sta ENEMY_Y,x
 	rts
-
-	;*****************************************************************
-	; returns enemy at row X, column Y, out: X = enemy index
-	;*****************************************************************
-
-enemy_at:
-	stx $0
-	sty $1
-	ldx #MAX_ENEMIES-1
-@loop:	lda ENEMY_Y,x
-	cmp $0
-	bne @next
-	lda ENEMY_X,x
-	cmp $1
-	bne @next
-	rts			; enemy found
-@next:	dex
-	bpl @loop
-	; monster not found -> error
-	.if 1
-@err:	inc $900f
-	jmp @err
-	.endif
 
 	;*****************************************************************
 	; data
