@@ -96,6 +96,8 @@
 	COLOR_EXPLORED	= COLOR_CYAN
 
 	; zero page variables
+	TMP_MX		= $6		; temp monster pos for enemy routines
+	TMP_MY		= $7
 	TMP_PRINT	= $8		; $8-$9 = temp pointer for print_msg
 	PX		= $10
 	PY		= $11

@@ -55,11 +55,45 @@ update_enemies:
 	and #7
 	cmp #COLOR_UNSEEN
 	beq @skip		; skip unseen enemies
-	ldx #1			; move right
-	jsr move_enemy
+	stx TMP_MY		; store current pos of monster
+	sty TMP_MX
+	jsr move_towards
 @skip:	dec $0
 	bpl @loop
 	rts
+
+	;*****************************************************************
+	; moves enemy towards player, in: X,Y = current position
+	;*****************************************************************
+
+move_towards:
+	cpx PY
+	bmi @skip1
+	beq @skip1
+	ldx #0			; move up
+	jsr move_enemy
+	bcc @done		; done if moved
+@skip1: ldy TMP_MX		; restore monster pos
+	cpy PX
+	bpl @skip2
+	beq @skip2
+	ldx #1			; move right
+	jsr move_enemy
+	bcc @done		; done if moved
+@skip2:	ldx TMP_MY		; restore monster pos
+	cpx PY
+	bpl @skip3
+	beq @skip3
+	ldx #2			; move down
+	jsr move_enemy
+	bcc @done		; done if moved
+@skip3:	ldy TMP_MX		; restore monster pos
+	cpy PX
+	bmi @done
+	beq @done
+	ldx #3			; move left
+	jsr move_enemy
+@done:	rts
 
 	;*****************************************************************
 	; moves enemy at cursor towards a direction, in:
@@ -75,11 +109,11 @@ move_enemy:
 	ldy CURSOR_X
 	lda (LINE_PTR),y
 	cmp #SCR_FLOOR
-	bne @done		; blocked
+	bne @block		; blocked
 	lda (COLOR_PTR),y
 	and #7
 	cmp #COLOR_UNSEEN
-	beq @done		; can't move to unseen cells
+	beq @block		; can't move to unseen cells
 	; update enemy coords
 	tya
 	ldy $0
@@ -108,7 +142,13 @@ move_enemy:
 	pla			; restore char
 	ora #64
 	jsr CHROUT
-@done:	rts
+@done:	clc			; success => clear carry
+	rts
+
+@block: lda @curs2,x		; move cursor back
+	jsr CHROUT
+	sec			; blocked => set carry
+	rts
 
 @curs1:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_LEFT
 @curs2:	.byte CHR_DOWN,CHR_LEFT,CHR_UP,CHR_RIGHT
