@@ -139,7 +139,9 @@ bend:	.word 0           		; end of program
 	; main program
 	;*****************************************************************
 
-start:	lda #8
+start:	ldx #$ff			; empty stack (we never get back to basic)
+	txs
+	lda #8
 	sta VIC_SCR_COLORS
 	lda #$80			; turn on key repeat for all keys
 	sta $028a
@@ -737,7 +739,7 @@ randomloc:
 	beq @done
 	dec RNDLOC_TMP
 	bne @rndcol
-	beq randomloc  ;same as 'jmp randomloc' but saves 1 byte
+	beq randomloc  		; same as 'jmp randomloc' but saves 1 byte
 @done:	rts
 
 	;*****************************************************************

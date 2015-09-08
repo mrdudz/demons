@@ -165,8 +165,8 @@ player_die:
 	ldx #<youdie
 	ldy #>youdie
 	jsr print_msg
-	jsr waitkey
-	ldx #$ff
-	txs
+@loop:	jsr waitkey	; wait space
+	cmp #32
+	bne @loop
 	jmp start
 	
