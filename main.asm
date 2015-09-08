@@ -11,6 +11,9 @@
 	SCREEN_HEIGHT	= 23
 	INITIAL_HP	= 6
 	MAX_ENEMIES	= 16
+	PLAYER_ACCURACY	= 140
+	ENEMY_ACCURACY	= 70
+	LOOT_DROP	= 30
 	DEBUG		= 0		; set to 0 for strip debug code
 	MUSIC		= 0
 
@@ -170,10 +173,13 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	sta SCROLLS-1
 	lda #SCR_SKULL
 	sta SKULLS-1
-	lda #COLOR_YELLOW
+	lda #COLOR_RED
 	sta POTIONS-SCREEN+COLOR_RAM-1
+	lda #COLOR_GREEN
 	sta GEMS-SCREEN+COLOR_RAM-1
+	lda #COLOR_PURPLE
 	sta SCROLLS-SCREEN+COLOR_RAM-1
+	lda #COLOR_YELLOW
 	sta SKULLS-SCREEN+COLOR_RAM-1
 
 	lda #'0'+$80			; init vars
@@ -245,6 +251,7 @@ mainloop:
 
 	.include "player.asm"
 	.include "enemy.asm"
+	.include "item.asm"
 	.if MUSIC
 	.include "music.asm"
 	.endif
@@ -326,6 +333,7 @@ random_level:
 	jsr init_player
 	jsr init_stairs
 	jsr init_enemies
+	jsr init_items
 	rts
 
 	;*****************************************************************
@@ -760,7 +768,7 @@ welcome:.byte "DEMONS OF DEX",0
 descend:.byte "DESCENDING...",0
 youhit:	.byte "YOU HIT THE %!",0
 youmiss:.byte "YOU MISS.",0
-youdie: .byte "YOU DIED!",0
+youdie: .byte "YOU DIE!",0
 monhit: .byte "% HITS YOU!",0
 monmiss:.byte "% MISSES!",0
 mondie:	.byte "THE % DIES!",0
@@ -817,9 +825,9 @@ colors:	;.byte COLOR_RED			; (heart)
 	.byte COLOR_CYAN			; + door
 	.byte COLOR_WHITE			; > stairs
 	.byte COLOR_WHITE			; @ player
-	.byte COLOR_YELLOW			; ! potion
-	.byte COLOR_YELLOW			; (gem)
-	.byte COLOR_YELLOW			; ? scroll
+	.byte COLOR_RED				; ! potion
+	.byte COLOR_GREEN			; (gem)
+	.byte COLOR_PURPLE			; ? scroll
 	.byte COLOR_YELLOW			; & skull
 	.byte COLOR_YELLOW			; $ gold
 	.byte COLOR_RED				; b bat

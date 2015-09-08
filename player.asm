@@ -126,25 +126,34 @@ player_attack:
 	lda (LINE_PTR),y
 	sta CUR_NAME			; store current monster
 	jsr rand8
-	cmp #128
+	cmp #PLAYER_ACCURACY
 	bcc @hit
 	ldx #<youmiss
 	ldy #>youmiss
 	bne @pr				; same as 'jmp @pr' but saves 1 byte
-@hit:	txa				; save X,Y
-	pha
-	tya
-	pha
+ @hit:	stx TMP_MY			; save X,Y
+	sty TMP_MX
 	ldx #<youhit
 	ldy #>youhit
 	jsr print_msg
-	pla				; restore X,Y
-	tay
-	pla
-	tax
+	ldx TMP_MY			; restore X,Y
+	ldy TMP_MX
 	jsr damage_flash
 	jsr remove_enemy
-	ldx #<mondie
+	; drop loot
+	jsr rand8
+	cmp #LOOT_DROP
+	bcs @noloot
+	ldx TMP_MY			; restore X,Y
+	ldy TMP_MX
+	jsr random_loot
+	; set loot color
+	and #$ff-64
+	tay
+	lda colors-SCR_WALL,y
+	ldy TMP_MX
+	sta (COLOR_PTR),y
+@noloot:ldx #<mondie
 	ldy #>mondie
 @pr:	jsr print_msg
 	jsr delay

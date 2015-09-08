@@ -162,7 +162,7 @@ move_enemy:
 
 enemy_attack:
 	jsr rand8
-	cmp #128
+	cmp #ENEMY_ACCURACY
 	bcc @hit
 	; miss
 	ldx #<monmiss
