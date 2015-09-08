@@ -51,6 +51,8 @@ update_enemies:
 	lda ENEMY_X,y
 	tay			; Y = column
 	jsr move
+	lda (LINE_PTR),y	; store monster name for printing
+	sta CUR_NAME
 	lda (COLOR_PTR),y
 	and #7
 	cmp #COLOR_UNSEEN
@@ -105,6 +107,8 @@ move_enemy:
 	jsr CHROUT
 	ldy CURSOR_X
 	lda (LINE_PTR),y
+	cmp #SCR_PLAYER
+	beq enemy_attack
 	cmp #SCR_FLOOR
 	bne @block		; blocked
 	lda (COLOR_PTR),y
@@ -151,6 +155,32 @@ move_enemy:
 	rts
 
 @dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_LEFT
+
+	;*****************************************************************
+	; enemy attacks player
+	;*****************************************************************
+
+enemy_attack:
+	jsr rand8
+	cmp #128
+	bcc @hit
+	; miss
+	ldx #<monmiss
+	ldy #>monmiss
+	jsr print_msg
+	jsr delay
+	bne @end		; same as 'jmp @end' but saves 1 byte
+@hit:	; hit
+	ldx #<monhit
+	ldy #>monhit
+	jsr print_msg
+	ldx PY
+	ldy PX
+	jsr move
+	jsr damage_flash
+	jsr player_damage
+@end:	clc			; success => clear carry
+	rts
 
 	;*****************************************************************
 	; remove enemy at row X, column Y

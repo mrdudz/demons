@@ -82,6 +82,7 @@
 	SCR_SLIME	= 18
 	SCR_WIZARD	= 19
 	SCR_DEMON	= 20
+	SCR_DAMAGE	= SCR_GEM
 
 	; color codes
 	COLOR_BLACK	= 0
@@ -239,7 +240,8 @@ mainloop:
 	; include other source files
 	;*****************************************************************
 
-	.include "enemy.asm"	
+	.include "player.asm"
+	.include "enemy.asm"
 	.if MUSIC
 	.include "music.asm"
 	.endif
@@ -321,158 +323,6 @@ random_level:
 	jsr init_player
 	jsr init_stairs
 	jsr init_enemies
-	rts
-
-	;*****************************************************************
-	; initialize player
-	;*****************************************************************
-
-init_player:
-	ldx #10
-	ldy #11
-	stx PY
-	sty PX
-	lda #CHR_PLAYER
-	jsr plot
-	rts
-
-	;*****************************************************************
-	; update player
-	;*****************************************************************
-
-update_player:
-	; handle movement
-	ldy PX
-	ldx PY
-	; store old pos
-	stx $0
-	sty $1
-	cmp #'W' ;CHR_UP
-	beq @up
-	cmp #'S' ;CHR_DOWN
-	beq @down
-	cmp #'A' ;CHR_LEFT
-	beq @left
-	cmp #'D' ;CHR_RIGHT
-	beq @right
-	rts
-
-@up:	dex
-	jmp @move
-@down:	inx
-	jmp @move
-@left:	dey
-	jmp @move
-@right:	iny
-
-@move:	; X,Y = move target
-	jsr move
-	; check obstacle
-	lda (LINE_PTR),y
-	cmp #SCR_WALL
-	beq blocked
-	cmp #SCR_STAIRS
-	beq enter_stairs
-	cmp #SCR_DOOR
-	beq open_door
-	cmp #SCR_BAT
-	bpl player_attack
-	cmp #SCR_POTION
-	bpl pickup_item
-
-	; move player to X,Y
-movepl:	sty PX			; store new pos
-	stx PY
-	lda #COLOR_UNSEEN
-	sta CUR_COLOR
-	lda #CHR_PLAYER
-	jsr plot		; draw player at new pos
-	ldx $0			; restore old pos
-	ldy $1
-	lda #CHR_FLOOR
-	jsr plot		; erase old player
-	rts
-
-blocked:
-	ldx #<block
-	ldy #>block
-	jsr print_msg
-	rts
-
-open_door:
-	lda #COLOR_UNSEEN
-	sta CUR_COLOR
-	lda #CHR_FLOOR
-	jsr plot
-	jsr reveal_area
-	ldx #<opened
-	ldy #>opened
-	jsr print_msg
-	rts
-
-enter_stairs:
-	ldx #<descend
-	ldy #>descend
-	jsr print_msg
-	inc DUNGEON_LEVEL
-	jsr random_level
-	rts
-
-pickup_item:
-	txa				; save X,Y
-	pha
-	tya
-	pha
-	lda (LINE_PTR),y		; store name
-	sta CUR_NAME
-	tax
-	lda mul3-SCR_POTION,x
-	tax				; X = item type * 3
-	lda POTIONS,x
-	cmp #'9'+$80			; max 9 items per type
-	beq @skip
-	inc POTIONS,x 		
-@skip:	ldx #<found			; print found
-	ldy #>found
-	jsr print_msg
-	pla				; restore X,Y
-	tay
-	pla
-	tax
-	jmp movepl
-
-mul3:	.byte 0,3,6,9
-
-	;*****************************************************************
-	; player attack, in: X,Y = target coordinates
-	;*****************************************************************
-
-player_attack:
-	lda (LINE_PTR),y
-	sta CUR_NAME			; store current monster
-	jsr rand8
-	cmp #128
-	bcc @hit
-	ldx #<youmiss
-	ldy #>youmiss
-	jsr print_msg
-	rts
-@hit:	txa				; save X,Y
-	pha
-	tya
-	pha
-	ldx #<youhit
-	ldy #>youhit
-	jsr print_msg
-	jsr waitkey
-	pla				; restore X,Y
-	tay
-	pla
-	tax
-	jsr remove_enemy
-	ldx #<mondie
-	ldy #>mondie
-	jsr print_msg
 	rts
 
 	;*****************************************************************
@@ -729,7 +579,8 @@ print_msg:
 	inx
 @chk:	cpx #22
 	bne @loop2
-@done:	rts
+@done:	;jsr delay
+	rts
 
 	; prints monster/item name
 @print_name:
@@ -753,6 +604,27 @@ print_msg:
 	bne @loop1
 
 	;*****************************************************************
+	; damage flash at cursor
+	;*****************************************************************
+
+damage_flash:
+	ldy CURSOR_X
+	lda (LINE_PTR),y
+	pha			; save char
+	lda (COLOR_PTR),y
+	pha			; save color
+	lda #SCR_DAMAGE
+	sta (LINE_PTR),y
+	lda #COLOR_YELLOW
+	sta (COLOR_PTR),y
+	jsr delay
+	pla			; restore color
+	sta (COLOR_PTR),y	
+	pla			; restore char
+	sta (LINE_PTR),y	
+	rts
+
+	;*****************************************************************
 	; update hp
 	;*****************************************************************
 
@@ -769,14 +641,16 @@ update_hp:
 	lda HP
 	lsr		; lowest bit of hp goes to carry
 	tax		; does not affect carry
-	bcc @loop2 	; carry clear -> dont draw half heart
+	bcc @skip 	; carry clear -> dont draw half heart
 	lda #SCR_HALF_HEART
 	sta SCREEN+22*22,x
+@skip:	cpx #0
+	beq @nohp
 @loop2:	lda #SCR_HEART
 	sta SCREEN+22*22-1,x
 	dex
 	bne @loop2
-	rts
+@nohp:	rts
 
 	;*****************************************************************
 	; clears the screen
@@ -800,14 +674,15 @@ clearscreen:
 	; short delay in busy loop
 	;*****************************************************************
 
-	.if DEBUG
 delay:	txa
 	pha
 	tya
 	pha
-	ldy #$40
+	ldy #$ff
 @delay1:ldx #$ff
-@delay2:dex
+@delay2:nop
+	nop
+	dex
 	bne @delay2
 	dey
 	bne @delay1
@@ -816,7 +691,6 @@ delay:	txa
 	pla
 	tax
 	rts
-	.endif
 
 	;*****************************************************************
 	; simple 8-bit random number generator by White Flame (aka David Holz)
@@ -883,7 +757,10 @@ welcome:.byte "DEMONS OF DEX",0
 descend:.byte "DESCENDING...",0
 youhit:	.byte "YOU HIT THE %!",0
 youmiss:.byte "YOU MISS.",0
-mondie:	.byte "THE % IS DEAD!",0
+youdie: .byte "YOU DIED!",0
+monhit: .byte "% HITS YOU!",0
+monmiss:.byte "% MISSES!",0
+mondie:	.byte "THE % DIES!",0
 opened:	.byte "OPENED.",0
 block:	.byte "BLOCKED.",0
 found:	.byte "FOUND %.",0
