@@ -73,22 +73,19 @@ move_towards:
 	ldx #0			; move up
 	jsr move_enemy
 	bcc @done		; done if moved
-@skip1: ldy TMP_MX		; restore monster pos
-	cpy PX
+@skip1: cpy PX
 	bpl @skip2
 	beq @skip2
 	ldx #1			; move right
 	jsr move_enemy
 	bcc @done		; done if moved
-@skip2:	ldx TMP_MY		; restore monster pos
-	cpx PY
+@skip2:	cpx PY
 	bpl @skip3
 	beq @skip3
 	ldx #2			; move down
 	jsr move_enemy
 	bcc @done		; done if moved
-@skip3:	ldy TMP_MX		; restore monster pos
-	cpy PX
+@skip3:	cpy PX
 	bmi @done
 	beq @done
 	ldx #3			; move left
@@ -104,7 +101,7 @@ move_towards:
 
 move_enemy:
 	; check obstacles
-	lda @curs1,x		; move cursor to target
+	lda @dirs,x		; move cursor to target cell
 	jsr CHROUT
 	ldy CURSOR_X
 	lda (LINE_PTR),y
@@ -121,10 +118,12 @@ move_enemy:
 	lda CURSOR_Y
 	sta ENEMY_Y,y
 	; move cursor back
-	lda @curs2,x
-	jsr CHROUT
+	txa
+	ldy TMP_MX
+	ldx TMP_MY
+	jsr move
+	tax
 	; save old char and color
-	ldy CURSOR_X
 	lda (LINE_PTR),y	
 	pha			; save char
 	lda (COLOR_PTR),y
@@ -135,7 +134,7 @@ move_enemy:
 	lda #COLOR_EXPLORED
 	sta (COLOR_PTR),y
 	; draw monster
-	lda @curs1,x		; move cursor to target
+	lda @dirs,x		; move cursor to target cell
 	jsr CHROUT
 	pla			; restore color
 	sta CUR_COLOR
@@ -145,13 +144,13 @@ move_enemy:
 @done:	clc			; success => clear carry
 	rts
 
-@block: lda @curs2,x		; move cursor back
-	jsr CHROUT
+@block: ldy TMP_MX		; move cursor back
+	ldx TMP_MY
+	jsr move
 	sec			; blocked => set carry
 	rts
 
-@curs1:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_LEFT
-@curs2:	.byte CHR_DOWN,CHR_LEFT,CHR_UP,CHR_RIGHT
+@dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_LEFT
 
 	;*****************************************************************
 	; remove enemy at row X, column Y
