@@ -112,6 +112,8 @@
 	DUNGEON_LEVEL	= $16
 	GOLD		= $1b
 	HP		= $1c
+	TURN		= $1d
+	MSG_TIME	= $1e		; last time print message was called
 
 	; misc data
 	ENEMY_X		= $0340		; tape buffer $033c-$03ff
@@ -193,6 +195,8 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	sta DUNGEON_LEVEL
 	lda #INITIAL_HP
 	sta HP
+	lda #0
+	sta TURN
 
 	.if MUSIC
 	jsr init_music
@@ -243,6 +247,7 @@ mainloop:
 	jsr print_hex
 	.endif
 
+	inc TURN
 	jmp mainloop
 
 	;*****************************************************************
@@ -570,6 +575,14 @@ print_hex:
 	;*****************************************************************
 
 print_msg:
+	; prevent flooding messages on same turn
+	lda MSG_TIME
+	cmp TURN
+	bne @skip
+	jsr delay
+@skip:	lda TURN
+	sta MSG_TIME
+	;
 	stx TMP_PRINT
 	sty TMP_PRINT+1
 	ldx #0		; X = screen pos
@@ -590,8 +603,7 @@ print_msg:
 	inx
 @chk:	cpx #22
 	bne @loop2
-@done:	;jsr delay
-	rts
+@done:	rts
 
 	; prints monster/item name
 @print_name:
@@ -633,6 +645,8 @@ damage_flash:
 	sta (COLOR_PTR),y	
 	pla			; restore char
 	sta (LINE_PTR),y	
+	lda #0			; reset flood counter
+	sta MSG_TIME
 	rts
 
 	;*****************************************************************

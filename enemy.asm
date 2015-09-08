@@ -168,8 +168,8 @@ enemy_attack:
 	ldx #<monmiss
 	ldy #>monmiss
 	jsr print_msg
-	jsr delay
-	bne @end		; same as 'jmp @end' but saves 1 byte
+	clc
+	rts
 @hit:	; hit
 	ldx #<monhit
 	ldy #>monhit

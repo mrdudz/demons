@@ -156,7 +156,6 @@ player_attack:
 @noloot:ldx #<mondie
 	ldy #>mondie
 @pr:	jsr print_msg
-	jsr delay
 	rts
 
 	;*****************************************************************
