@@ -50,40 +50,54 @@ update_enemies:
 	beq @skip		; skip if enemy slot unused
 	lda ENEMY_X,y
 	tay			; Y = column
-	; move enemy
 	jsr move
 	lda (COLOR_PTR),y
 	and #7
 	cmp #COLOR_UNSEEN
 	beq @skip		; skip unseen enemies
-	; store monster type
-	lda (LINE_PTR),y
-	sta CUR_NAME
-	; try to move right
-	iny
-	lda (LINE_PTR),y
-	dey
-	cmp #SCR_FLOOR
-	bne @skip
-	; clear enemy from old pos
-	lda #COLOR_EXPLORED
-	sta CUR_COLOR
-	lda #CHR_FLOOR
-	jsr CHROUT
-	; draw enemy at new pos
-	iny
-	lda #COLOR_YELLOW	; TODO: preserve old monster color!
-	sta CUR_COLOR
-	lda CUR_NAME
-	ora #64			; screen code to char code
-	jsr CHROUT
-	; update monster coords
-	tya
-	ldx $0
-	inc ENEMY_X,x
+	lda $0			; A = enemy
+	jsr move_enemy_right
 @skip:	dec $0
 	bpl @loop
 	rts
+
+	;*****************************************************************
+	; moves enemy at cursor towards a direction
+	; $0=enemy
+	; A = char code for cursor movement (CHR_UP, CHR_RIGHT, etc.)
+	;*****************************************************************
+
+move_enemy_right:
+	; check obstacles
+	iny
+	lda (LINE_PTR),y
+	cmp #SCR_FLOOR
+	bne @done		; blocked
+	lda (COLOR_PTR),y
+	and #7
+	cmp #COLOR_UNSEEN
+	beq @done		; can't move to unseen cells
+	dey
+	; save old char and color
+	lda (LINE_PTR),y	
+	pha			; save char
+	lda (COLOR_PTR),y
+	pha			; save color
+	; clear monster
+	lda #SCR_FLOOR
+	sta (LINE_PTR),y
+	lda #COLOR_EXPLORED
+	sta (COLOR_PTR),y
+	; draw monster
+	iny
+	pla			; restore color
+	sta (COLOR_PTR),y
+	pla			; restore char
+	sta (LINE_PTR),y
+	; update enemy coords
+	ldx $0
+	inc ENEMY_X,x
+@done:	rts
 
 	;*****************************************************************
 	; remove enemy at row X, column Y

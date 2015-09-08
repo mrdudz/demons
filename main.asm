@@ -219,12 +219,12 @@ mainloop:
 
 	jsr update_enemies
 
-	; test extract bits
+	; test check walls
 	.if 0
 	ldy PX
 	ldx PY
 	jsr move
-	jsr extract_bits
+	jsr check_walls
 	ldy #0
 	ldx #1
 	jsr move
@@ -488,8 +488,7 @@ init_stairs:
 	;*****************************************************************
 
 init_doors:
-	; traverse the level and extract bits for each floor cell
-	; place door if bits match with one in the door bit list
+	; traverse the level and check walls at each floor cell
 	ldx #20 		; X = row
 @yloop:	ldy #20 		; Y = column
 @xloop:	jsr move		; move cursor
@@ -498,7 +497,7 @@ init_doors:
 	lda (LINE_PTR),y
 	cmp #SCR_FLOOR
 	bne @skip
-	jsr extract_bits
+	jsr check_walls
 	; check if bits match with a possible door location
 	ldy #0
 @chk:	cmp @doorbits,y
@@ -526,7 +525,7 @@ init_doors:
 	; in: (cursor pos)   out: A=bitmask    trashes: X,Y
 	;*****************************************************************
 
-extract_bits:
+check_walls:
 	lda #0
 	sta $0		; $0 = result bitmask
 	tay		; Y = 0
@@ -638,6 +637,15 @@ move:	pha		; store A,X,Y
 	clc
 	adc #$96-$1e
 	sta COLOR_PTR+1
+	; update screen ptr (line ptr + cursx)
+	; clc
+	; lda LINE_PTR
+	; adc CURSOR_X
+	; sta SCREEN_PTR
+	; lda LINE_PTR+1
+	; adc #0
+	; sta SCREEN_PTR+1
+	;
 	pla		; restore A,X,Y
 	tay
 	pla
