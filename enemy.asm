@@ -55,21 +55,24 @@ update_enemies:
 	and #7
 	cmp #COLOR_UNSEEN
 	beq @skip		; skip unseen enemies
-	lda $0			; A = enemy
-	jsr move_enemy_right
+	ldx #1			; move right
+	jsr move_enemy
 @skip:	dec $0
 	bpl @loop
 	rts
 
 	;*****************************************************************
-	; moves enemy at cursor towards a direction
-	; $0=enemy
-	; A = char code for cursor movement (CHR_UP, CHR_RIGHT, etc.)
+	; moves enemy at cursor towards a direction, in:
+	; cursor at enemy
+	; $0 = enemy
+	;  X = direction (0=up, 1=right, 2=down, 3=left)
 	;*****************************************************************
 
-move_enemy_right:
+move_enemy:
 	; check obstacles
-	iny
+	lda @curs1,x		; move cursor to target
+	jsr CHROUT
+	ldy CURSOR_X
 	lda (LINE_PTR),y
 	cmp #SCR_FLOOR
 	bne @done		; blocked
@@ -77,8 +80,17 @@ move_enemy_right:
 	and #7
 	cmp #COLOR_UNSEEN
 	beq @done		; can't move to unseen cells
-	dey
+	; update enemy coords
+	tya
+	ldy $0
+	sta ENEMY_X,y
+	lda CURSOR_Y
+	sta ENEMY_Y,y
+	; move cursor back
+	lda @curs2,x
+	jsr CHROUT
 	; save old char and color
+	ldy CURSOR_X
 	lda (LINE_PTR),y	
 	pha			; save char
 	lda (COLOR_PTR),y
@@ -89,15 +101,17 @@ move_enemy_right:
 	lda #COLOR_EXPLORED
 	sta (COLOR_PTR),y
 	; draw monster
-	iny
+	lda @curs1,x		; move cursor to target
+	jsr CHROUT
 	pla			; restore color
-	sta (COLOR_PTR),y
+	sta CUR_COLOR
 	pla			; restore char
-	sta (LINE_PTR),y
-	; update enemy coords
-	ldx $0
-	inc ENEMY_X,x
+	ora #64
+	jsr CHROUT
 @done:	rts
+
+@curs1:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_LEFT
+@curs2:	.byte CHR_DOWN,CHR_LEFT,CHR_UP,CHR_RIGHT
 
 	;*****************************************************************
 	; remove enemy at row X, column Y
