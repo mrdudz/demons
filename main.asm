@@ -38,51 +38,52 @@
 	CHR_RIGHT	= 29
 	CHR_HOME	= 19
 	CHR_CLR_HOME	= 147
-	CHR_WALL	= 64
-	CHR_FLOOR	= 65
-	CHR_DOOR	= 66
-	CHR_STAIRS	= 67
-	CHR_PLAYER	= 68
-	CHR_HEART	= 69
-	CHR_HALF_HEART	= 70
-	CHR_POTION	= 71
-	CHR_GEM		= 72
-	CHR_SCROLL	= 73
-	CHR_SKULL	= 74
-	CHR_GOLD	= 75
-	CHR_BAT		= 76
-	CHR_RAT		= 77
-	CHR_SNAKE	= 78
-	CHR_ORC		= 79
-	CHR_UNDEAD	= 80
-	CHR_STALKER	= 81
-	CHR_SLIME	= 82
-	CHR_WIZARD	= 83
-	CHR_DEMON	= 84
+	CHR_HEART	= 64
+	CHR_HALF_HEART	= 65
+	CHR_DAMAGE	= 66
+	CHR_WALL	= 67
+	CHR_FLOOR	= 68
+	CHR_DOOR	= 69
+	CHR_STAIRS	= 70
+	CHR_PLAYER	= 71
+	CHR_POTION	= 72
+	CHR_GEM		= 73
+	CHR_SCROLL	= 74
+	CHR_SKULL	= 75
+	CHR_GOLD	= 76
+	CHR_BAT		= 77
+	CHR_RAT		= 78
+	CHR_SNAKE	= 79
+	CHR_ORC		= 80
+	CHR_UNDEAD	= 81
+	CHR_STALKER	= 82
+	CHR_SLIME	= 83
+	CHR_WIZARD	= 84
+	CHR_DEMON	= 85
 
 	; screen codes
-	SCR_WALL	= 0
-	SCR_FLOOR	= 1
-	SCR_DOOR	= 2
-	SCR_STAIRS	= 3
-	SCR_PLAYER	= 4
-	SCR_HEART	= 5
-	SCR_HALF_HEART	= 6
-	SCR_POTION	= 7
-	SCR_GEM		= 8
-	SCR_SCROLL	= 9
-	SCR_SKULL	= 10
-	SCR_GOLD	= 11
-	SCR_BAT		= 12
-	SCR_RAT		= 13
-	SCR_SNAKE	= 14
-	SCR_ORC		= 15
-	SCR_UNDEAD	= 16
-	SCR_STALKER	= 17
-	SCR_SLIME	= 18
-	SCR_WIZARD	= 19
-	SCR_DEMON	= 20
-	SCR_DAMAGE	= SCR_GEM
+	SCR_HEART	= 0
+	SCR_HALF_HEART	= 1
+	SCR_DAMAGE	= 2
+	SCR_WALL	= 3
+	SCR_FLOOR	= 4
+	SCR_DOOR	= 5
+	SCR_STAIRS	= 6
+	SCR_PLAYER	= 7
+	SCR_POTION	= 8
+	SCR_GEM		= 9
+	SCR_SCROLL	= 10
+	SCR_SKULL	= 11
+	SCR_GOLD	= 12
+	SCR_BAT		= 13
+	SCR_RAT		= 14
+	SCR_SNAKE	= 15
+	SCR_ORC		= 16
+	SCR_UNDEAD	= 17
+	SCR_STALKER	= 18
+	SCR_SLIME	= 19
+	SCR_WIZARD	= 20
+	SCR_DEMON	= 21
 
 	; color codes
 	COLOR_BLACK	= 0
@@ -433,7 +434,7 @@ reveal_area:
 	; reveal cell
 	lda (LINE_PTR),y
 	tax			; X = screen code to be revealed
-	lda colors,x
+	lda colors-SCR_WALL,x
 	sta (COLOR_PTR),y
 	ldx CURSOR_Y		; restore X
 
@@ -768,14 +769,7 @@ block:	.byte "BLOCKED.",0
 found:	.byte "FOUND %.",0
 
 	; monster and item names (the unused bytes could be used to store variables)
-names:  ;.byte "WALL",0,0,0,0
-	;.byte "FLOOR",0,0,0
-	;.byte "DOOR",0,0,0,0
-	;.byte "STAIRS",0,0
-	;.byte "YOU",0,0,0,0,0
-	;.byte "HEART",0,0,0
-	;.byte "HALF",0,0,0,0
-	.byte "POTION",0,0
+names:  .byte "POTION",0,0
 	.byte "GEM",0,0,0,0,0
 	.byte "SCROLL",0,0
 	.byte "SKULL",0,0,0
@@ -791,15 +785,16 @@ names:  ;.byte "WALL",0,0,0,0
 	.byte "DEMON",0,0,0
 
 	; user defined chars
-charset:.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
+charset:.byte $36,$7f,$7f,$7f,$3e,$1c,$08,$00	; (heart)
+	.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
+	.byte $08,$2a,$1c,$3e,$1c,$2a,$08,$00	; * damage
+	.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
 	.byte $00,$00,$00,$00,$00,$18,$18,$00	; . floor
 	.byte $ff,$f7,$f7,$c1,$f7,$f7,$ff,$ff	; + door
 	.byte $70,$18,$0c,$06,$0c,$18,$70,$00	; > stairs
 	.byte $1c,$22,$4a,$56,$4c,$20,$1e,$00	; @ player
-	.byte $36,$7f,$7f,$7f,$3e,$1c,$08,$00	; (heart)
-	.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
 	.byte $08,$08,$08,$08,$00,$00,$08,$00	; ! potion
-	.byte $08,$2a,$1c,$3e,$1c,$2a,$08,$00	; * gem
+	.byte $08,$1c,$3e,$7f,$3e,$1c,$08,$00	; (gem)
 	.byte $3c,$42,$02,$0c,$10,$00,$10,$00	; ? scroll
 	.byte $30,$48,$48,$30,$4a,$44,$3a,$00	; & skull
 	.byte $08,$1e,$28,$1c,$0a,$3c,$08,$00	; $ gold
@@ -814,15 +809,16 @@ charset:.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
 	.byte $78,$24,$22,$22,$22,$24,$78,$00	; D demon
 charset_end:
 
-colors:	.byte COLOR_CYAN			; # wall
+colors:	;.byte COLOR_RED			; (heart)
+	;.byte COLOR_RED			; (half heart)
+	;.byte COLOR_RED			; * damage
+	.byte COLOR_CYAN			; # wall
 	.byte COLOR_CYAN			; . floor
 	.byte COLOR_CYAN			; + door
 	.byte COLOR_WHITE			; > stairs
 	.byte COLOR_WHITE			; @ player
-	.byte COLOR_RED				; (heart)
-	.byte COLOR_RED				; (half heart)
 	.byte COLOR_YELLOW			; ! potion
-	.byte COLOR_YELLOW			; * gem
+	.byte COLOR_YELLOW			; (gem)
 	.byte COLOR_YELLOW			; ? scroll
 	.byte COLOR_YELLOW			; & skull
 	.byte COLOR_YELLOW			; $ gold
