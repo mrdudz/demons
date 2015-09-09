@@ -464,39 +464,38 @@ reveal:	lda #1			; top-right segment
 	;jsr @doseg
 	;rts
 
-@doseg:	; horiz
-	lda PX			; start at player
-	sta reveal_x
-	lda PY
-	sta reveal_y
-@hloop:	ldy reveal_x
-	ldx reveal_y
-	jsr move
+@doseg:	; horiz pass
+	ldy PX			; start at player
+	ldx PY
+@hloop:	jsr move
 	jsr @reveal_cell
 	beq @vert		; done if blocked
-	lda reveal_x
+	ldy reveal_x		; restore X,Y
+	ldx reveal_y
+	tya			; step x
 	clc
 	adc reveal_dx
-	sta reveal_x
+	tay
 	bpl @hloop		; always branches
-	; vert
-@vert:	lda PX			; start at player
-	sta reveal_x
-	lda PY
-	sta reveal_y
-@vloop:	ldy reveal_x
-	ldx reveal_y
-	jsr move
+
+	; vert pass
+@vert:	ldy PX			; start at player
+	ldx PY
+@vloop:	jsr move
 	jsr @reveal_cell
 	beq @block		; done if blocked
-	lda reveal_y
+	ldy reveal_x		; restore X,Y
+	ldx reveal_y
+	txa			; step y
 	clc
 	adc reveal_dy
-	sta reveal_y
+	tax
 	bne @vloop		; always branches
 @block:	rts
 
 @reveal_cell:
+	sty reveal_x
+	stx reveal_y
 	; reveal cell
 	jsr @mark_cell_visible
 	; stop at wall or door cell
