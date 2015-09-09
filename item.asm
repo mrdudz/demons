@@ -26,7 +26,6 @@ random_loot:
 	and #7
 	tay
 	lda @items,y
-	jsr CHROUT
-	rts
+	jmp CHROUT		; jsr CHROUT + rts
 
 @items: .byte CHR_POTION,CHR_POTION,CHR_POTION,CHR_POTION,CHR_GEM,CHR_SCROLL,CHR_SKULL,CHR_GOLD

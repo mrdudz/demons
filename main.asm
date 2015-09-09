@@ -1,130 +1,137 @@
-	;*****************************************************************
-	; Demons of Dex
-	; A roguelike for the unexpanded VIC-20
-	; (C) 2015 Petri Hakkinen. All rights reserved.
-	;*****************************************************************
+;*****************************************************************
+; Demons of Dex
+; A roguelike for the unexpanded VIC-20
+; (C) 2015 Petri Hakkinen. All rights reserved.
+;*****************************************************************
 
-	; constants
-	SCREEN 		= $1e00
-	COLOR_RAM	= $9600
-	SCREEN_WIDTH	= 22
-	SCREEN_HEIGHT	= 23
-	INITIAL_HP	= 6
-	MAX_ENEMIES	= 16
-	PLAYER_ACCURACY	= 140
-	ENEMY_ACCURACY	= 70
-	LOOT_DROP	= 30
-	DEBUG		= 0		; set to 0 for strip debug code
-	MUSIC		= 0
+; constants
+SCREEN 		= $1e00
+COLOR_RAM	= $9600
+SCREEN_WIDTH	= 22
+SCREEN_HEIGHT	= 23
+INITIAL_HP	= 6
+MAX_ENEMIES	= 16
+PLAYER_ACCURACY	= 140
+ENEMY_ACCURACY	= 70
+LOOT_DROP	= 30
+MSG_DELAY	= 33		; message delay length in 1/60 seconds
+DEBUG		= 0		; set to 0 for strip debug code
+MUSIC		= 0
 
-	; kernal routines
-	CHROUT		= $ffd2
-	PLOT		= $fff0
-	GETIN		= $ffe4
-	LINE_PTR	= $d1		; pointer to current line is stored in $d1-$d2
-	CURSOR_X	= $d3
-	CURSOR_Y	= $d6
-	CUR_COLOR	= $0286
+; kernal routines
+CHROUT		= $ffd2
+PLOT		= $fff0
+GETIN		= $ffe4
+CUR_COLOR	= $0286
 
-	; char codes
-	CHR_WHITE	= 5
-	CHR_RED		= 28
-	CHR_GREEN	= 30
-	CHR_BLUE	= 31
-	CHR_BLACK	= 144
-	CHR_PURPLE	= 156
-	CHR_YELLOW	= 158
-	CHR_CYAN	= 159
-	CHR_DOWN	= 17
-	CHR_UP		= 145
-	CHR_LEFT 	= 157
-	CHR_RIGHT	= 29
-	CHR_HOME	= 19
-	CHR_CLR_HOME	= 147
-	CHR_HEART	= 64
-	CHR_HALF_HEART	= 65
-	CHR_DAMAGE	= 66
-	CHR_WALL	= 67
-	CHR_FLOOR	= 68
-	CHR_DOOR	= 69
-	CHR_STAIRS	= 70
-	CHR_PLAYER	= 71
-	CHR_POTION	= 72
-	CHR_GEM		= 73
-	CHR_SCROLL	= 74
-	CHR_SKULL	= 75
-	CHR_GOLD	= 76
-	CHR_BAT		= 77
-	CHR_RAT		= 78
-	CHR_SNAKE	= 79
-	CHR_ORC		= 80
-	CHR_UNDEAD	= 81
-	CHR_STALKER	= 82
-	CHR_SLIME	= 83
-	CHR_WIZARD	= 84
-	CHR_DEMON	= 85
+; char codes
+CHR_WHITE	= 5
+CHR_RED		= 28
+CHR_GREEN	= 30
+CHR_BLUE	= 31
+CHR_BLACK	= 144
+CHR_PURPLE	= 156
+CHR_YELLOW	= 158
+CHR_CYAN	= 159
+CHR_DOWN	= 17
+CHR_UP		= 145
+CHR_LEFT 	= 157
+CHR_RIGHT	= 29
+CHR_HOME	= 19
+CHR_CLR_HOME	= 147
+CHR_HEART	= 64
+CHR_HALF_HEART	= 65
+CHR_DAMAGE	= 66
+CHR_WALL	= 67
+CHR_FLOOR	= 68
+CHR_DOOR	= 69
+CHR_STAIRS	= 70
+CHR_PLAYER	= 71
+CHR_POTION	= 72
+CHR_GEM		= 73
+CHR_SCROLL	= 74
+CHR_SKULL	= 75
+CHR_GOLD	= 76
+CHR_BAT		= 77
+CHR_RAT		= 78
+CHR_SNAKE	= 79
+CHR_ORC		= 80
+CHR_UNDEAD	= 81
+CHR_STALKER	= 82
+CHR_SLIME	= 83
+CHR_WIZARD	= 84
+CHR_DEMON	= 85
 
-	; screen codes
-	SCR_HEART	= 0
-	SCR_HALF_HEART	= 1
-	SCR_DAMAGE	= 2
-	SCR_WALL	= 3
-	SCR_FLOOR	= 4
-	SCR_DOOR	= 5
-	SCR_STAIRS	= 6
-	SCR_PLAYER	= 7
-	SCR_POTION	= 8
-	SCR_GEM		= 9
-	SCR_SCROLL	= 10
-	SCR_SKULL	= 11
-	SCR_GOLD	= 12
-	SCR_BAT		= 13
-	SCR_RAT		= 14
-	SCR_SNAKE	= 15
-	SCR_ORC		= 16
-	SCR_UNDEAD	= 17
-	SCR_STALKER	= 18
-	SCR_SLIME	= 19
-	SCR_WIZARD	= 20
-	SCR_DEMON	= 21
+; screen codes
+SCR_HEART	= 0
+SCR_HALF_HEART	= 1
+SCR_DAMAGE	= 2
+SCR_WALL	= 3
+SCR_FLOOR	= 4
+SCR_DOOR	= 5
+SCR_STAIRS	= 6
+SCR_PLAYER	= 7
+SCR_POTION	= 8
+SCR_GEM		= 9
+SCR_SCROLL	= 10
+SCR_SKULL	= 11
+SCR_GOLD	= 12
+SCR_BAT		= 13
+SCR_RAT		= 14
+SCR_SNAKE	= 15
+SCR_ORC		= 16
+SCR_UNDEAD	= 17
+SCR_STALKER	= 18
+SCR_SLIME	= 19
+SCR_WIZARD	= 20
+SCR_DEMON	= 21
+SCR_SPACE 	= 32 + $80
+SCR_0	 	= 48 + $80
 
-	; color codes
-	COLOR_BLACK	= 0
-	COLOR_WHITE	= 1
-	COLOR_RED	= 2
-	COLOR_CYAN	= 3
-	COLOR_PURPLE	= 4
-	COLOR_GREEN	= 5
-	COLOR_BLUE	= 6
-	COLOR_YELLOW	= 7
-	COLOR_UNSEEN	= COLOR_BLACK
-	COLOR_EXPLORED	= COLOR_CYAN
+; color codes
+COLOR_BLACK	= 0
+COLOR_WHITE	= 1
+COLOR_RED	= 2
+COLOR_CYAN	= 3
+COLOR_PURPLE	= 4
+COLOR_GREEN	= 5
+COLOR_BLUE	= 6
+COLOR_YELLOW	= 7
+COLOR_UNSEEN	= COLOR_BLACK
+COLOR_EXPLORED	= COLOR_CYAN
 
-	; zero page variables
-	TMP_PRINT	= $8		; $8-$9 = temp pointer for print_msg
-	PX		= $10
-	PY		= $11
-	RNDLOC_TMP	= $12
-	COLOR_PTR	= $13		; $13-$14 = pointer to current line in color ram
-	CUR_NAME	= $15		; current monster/item index for print
-	DUNGEON_LEVEL	= $16
-	GOLD		= $1b
-	HP		= $1c
-	TURN		= $1d
-	MSG_TIME	= $1e		; last time print message was called
-	MON_X		= $20		; current monster position
-	MON_Y		= $21
-	MON_COLOR	= $23
+; zero page variables
+TMP_PRINT	= $8		; $8-$9 = temp pointer for print_msg
+PX		= $10
+PY		= $11
+RNDLOC_TMP	= $12
+COLOR_PTR	= $13		; $13-$14 = pointer to current line in color ram
+CUR_NAME	= $15		; current monster/item index for print
+DUNGEON_LEVEL	= $16
+GOLD		= $1b
+HP		= $1c
+TURN		= $1d
+MSG_TIME	= $1e		; last time print message was called
+MON_X		= $20		; current monster position
+MON_Y		= $21
+MON_COLOR	= $23
+RANDOM_SEED	= $24		; TODO: initialize seed from raster pos or jiffy clock
+DELAY_TMP	= $25		; temp for delay routine
+; these are updated by kernal's PLOT routine
+LINE_PTR	= $d1		; pointer to current line is stored in $d1-$d2
+CURSOR_X	= $d3
+CURSOR_Y	= $d6
 
-	; misc data
-	BLOCKED_CELLS	= $033c		; 22 bytes (tape buffer $033c-$03ff)
-	POTIONS		= SCREEN+492	; item counts are stored in screen ram
-	GEMS		= POTIONS+3
-	SCROLLS		= GEMS+3
-	SKULLS		= SCROLLS+3
+; misc data
+; NOTE: unused memory in tape buffer $033c-$03ff
+BLOCKED_CELLS	= $0100		; 22 byte temp array in stack page for enemy update routine
+POTIONS		= SCREEN+492	; item counts are stored in screen ram
+GEMS		= POTIONS+3
+SCROLLS		= GEMS+3
+SKULLS		= SCROLLS+3
 
-	; VIC registers
-	VIC_SCR_COLORS	= $900F
+; VIC registers
+VIC_COLORS	= $900f
 
 	.byt $01,$10			; PRG file header (starting address of the program)
 
@@ -136,7 +143,7 @@
 
 	; stub basic program
 	.word bend 			; next line link
-	.word 666        		; line number
+	.word 2015        		; line number
 	.byte $9e,52,49,48,57		; sys 4109
 	.byte 0           		; end of line
 bend:	.word 0           		; end of program
@@ -148,7 +155,7 @@ bend:	.word 0           		; end of program
 start:	ldx #$ff			; empty stack (we never get back to basic)
 	txs
 	lda #8
-	sta VIC_SCR_COLORS
+	sta VIC_COLORS
 	lda #$80			; turn on key repeat for all keys
 	sta $028a
 	lda #$ff			; set character base to $1c00
@@ -167,37 +174,24 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	jsr CHROUT
 
 	; init status bar
-	lda #SCR_POTION
-	sta POTIONS-1
-	lda #SCR_GEM
-	sta GEMS-1
-	lda #SCR_SCROLL
-	sta SCROLLS-1
-	lda #SCR_SKULL
-	sta SKULLS-1
-	lda #COLOR_RED
-	sta POTIONS-SCREEN+COLOR_RAM-1
-	lda #COLOR_GREEN
-	sta GEMS-SCREEN+COLOR_RAM-1
-	lda #COLOR_PURPLE
-	sta SCROLLS-SCREEN+COLOR_RAM-1
-	lda #COLOR_YELLOW
-	sta SKULLS-SCREEN+COLOR_RAM-1
+	ldx #21
+@stat:	lda statscr,x
+	sta SCREEN+22*22+7,x
+	lda statcol,x
+	sta COLOR_RAM+22*22,x
+	dex
+	bpl @stat
 
-	lda #'0'+$80			; init vars
-	sta POTIONS
-	sta GEMS
-	sta SCROLLS
-	sta SKULLS
-	sta GOLD
-
+	; init game vars
 	lda #1
 	sta DUNGEON_LEVEL
 	lda #INITIAL_HP
 	sta HP
 	lda #0
 	sta TURN
+	sta GOLD
 
+	jsr update_hp
 	.if MUSIC
 	jsr init_music
 	.endif
@@ -212,8 +206,6 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	ldx #<welcome
 	ldy #>welcome
 	jsr print_msg
-
-	jsr update_hp
 
 	; dump charset
 	.if 0
@@ -373,7 +365,7 @@ init_doors:
 	iny
 	cpy #@doorbits_end-@doorbits
 	bne @chk
-	beq @skip		; same as 'jmp @skip' but saves 1 byte
+	beq @skip		; always branches
 @door:	lda #CHR_DOOR
 	jsr CHROUT
 @skip:  pla			; restore Y
@@ -414,7 +406,7 @@ check_walls:
 	inc $0
 @floor: pla		; restore y
 	tay
-	jmp @loop
+	bne @loop	; always branches
 @done:	; restore cursor
 	lda #CHR_RIGHT
 	jsr CHROUT
@@ -447,7 +439,7 @@ reveal_area:
 	; reveal cell
 	lda (LINE_PTR),y
 	tax			; X = screen code to be revealed
-	lda colors-SCR_WALL,x
+	lda colors,x
 	sta (COLOR_PTR),y
 	ldx CURSOR_Y		; restore X
 
@@ -525,6 +517,7 @@ plot:	jsr move
 	; X,Y = address of text
 	;*****************************************************************
 
+	.if 0
 print:	stx $0
 	sty $1
 	ldy #0
@@ -532,8 +525,9 @@ print:	stx $0
 	beq @done
 	jsr CHROUT
 	iny
-	bne @loop	; same as 'jmp @loop' but saves 1 byte
+	bne @loop	; always branches
 @done:	rts
+	.endif
 
 	;*****************************************************************
 	; prints 8-bit hex number at cursor, in: A
@@ -605,7 +599,7 @@ print_msg:
 	asl
 	asl
 	tay
-@mloop:	lda names-SCR_POTION*8,y
+@mloop:	lda names,y
 	beq @mdone
 	iny
 	and #$ff-64	; char to screen code
@@ -647,10 +641,8 @@ damage_flash:
 update_hp:
 	; clear old hearts
 	ldx #7
-@loop1: lda #32+$80
+@loop1: lda #SCR_SPACE
 	sta SCREEN+22*22-1,x
-	lda #COLOR_RED
-	sta COLOR_RAM+22*22-1,x
 	dex
 	bne @loop1
 	; draw hearts
@@ -687,25 +679,16 @@ clearscreen:
 	rts
 
 	;*****************************************************************
-	; short delay in busy loop
+	; short delay about half a second, trashes: A
 	;*****************************************************************
 
-delay:	txa
-	pha
-	tya
-	pha
-	ldy #$ff
-@delay1:ldx #$ff
-@delay2:nop
-	nop
-	dex
-	bne @delay2
-	dey
-	bne @delay1
-	pla
-	tay
-	pla
-	tax
+delay:	lda $a2
+	sta DELAY_TMP
+@loop:	sec
+	lda $a2
+	sbc DELAY_TMP
+	cmp #MSG_DELAY
+	bcc @loop
 	rts
 
 	;*****************************************************************
@@ -713,16 +696,14 @@ delay:	txa
 	; source: http://codebase64.org/doku.php?id=base:small_fast_8-bit_prng
 	;*****************************************************************
 
-rand8:	lda seed
+rand8:	lda RANDOM_SEED
 	beq do_eor
 	asl
 	beq no_eor 	; if the input was $80, skip the EOR
 	bcc no_eor
 do_eor:	eor #$1d	; TODO: randomize eor value (see codebase64.org for suitable values)
-no_eor:	sta seed
+no_eor:	sta RANDOM_SEED
 	rts
-
-seed:	.byte 0		; TODO: initialize seed from raster pos or timer value!
 
 	;*****************************************************************
 	; picks a random unoccupied location, returns: X=row, Y=column
@@ -753,7 +734,7 @@ randomloc:
 	beq @done
 	dec RNDLOC_TMP
 	bne @rndcol
-	beq randomloc  		; same as 'jmp randomloc' but saves 1 byte
+	beq randomloc  		; always branches
 @done:	rts
 
 	;*****************************************************************
@@ -776,13 +757,18 @@ youmiss:.byte "YOU MISS.",0
 youdie: .byte "YOU DIE!",0
 monhit: .byte "% HITS YOU!",0
 monmiss:.byte "% MISSES!",0
-mondie:	.byte "THE % DIES!",0
+mondie:	.byte "THE % IS DEAD!",0
 opened:	.byte "OPENED.",0
 block:	.byte "BLOCKED.",0
 found:	.byte "FOUND %.",0
 
+	; initial contents of status bar area in screen ram and color ram
+statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_SKULL,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
+statcol:.byte 2,2,2,2,2,2,2,2,1,1,5,1,1,4,1,1,7,1,1,1,1,1
+
 	; monster and item names (the unused bytes could be used to store variables)
-names:  .byte "POTION",0,0
+names = _names-SCR_POTION*8
+_names: .byte "POTION",0,0
 	.byte "GEM",0,0,0,0,0
 	.byte "SCROLL",0,0
 	.byte "SKULL",0,0,0
@@ -822,10 +808,8 @@ charset:.byte $36,$7f,$7f,$7f,$3e,$1c,$08,$00	; (heart)
 	.byte $78,$24,$22,$22,$22,$24,$78,$00	; D demon
 charset_end:
 
-colors:	;.byte COLOR_RED			; (heart)
-	;.byte COLOR_RED			; (half heart)
-	;.byte COLOR_RED			; * damage
-	.byte COLOR_CYAN			; # wall
+colors = _colors-SCR_WALL
+_colors:.byte COLOR_CYAN			; # wall
 	.byte COLOR_CYAN			; . floor
 	.byte COLOR_CYAN			; + door
 	.byte COLOR_WHITE			; > stairs

@@ -8,8 +8,7 @@ init_player:
 	stx PY
 	sty PX
 	lda #CHR_PLAYER
-	jsr plot
-	rts
+	jmp plot	; jsr plot + rts
 
 	;*****************************************************************
 	; update player
@@ -33,11 +32,11 @@ update_player:
 	rts
 
 @up:	dex
-	jmp @move
+	bne @move		; always branches
 @down:	inx
-	jmp @move
+	bne @move		; always branches
 @left:	dey
-	jmp @move
+	bne @move		; always branches
 @right:	iny
 
 @move:	; X,Y = move target
@@ -64,15 +63,13 @@ movepl:	sty PX			; store new pos
 	jsr plot		; draw player at new pos
 	ldx $0			; restore old pos
 	ldy $1
-	lda #CHR_FLOOR
-	jsr plot		; erase old player
-	rts
+	lda #CHR_FLOOR		; erase old player
+	jmp plot		; jsr print_msg + rts
 
 blocked:
 	ldx #<block
 	ldy #>block
-	jsr print_msg
-	rts
+	jmp print_msg		; jsr print_msg + rts
 
 open_door:
 	lda #COLOR_UNSEEN
@@ -82,16 +79,14 @@ open_door:
 	jsr reveal_area
 	ldx #<opened
 	ldy #>opened
-	jsr print_msg
-	rts
+	jmp print_msg		; jsr print_msg + rts
 
 enter_stairs:
 	ldx #<descend
 	ldy #>descend
 	jsr print_msg
 	inc DUNGEON_LEVEL
-	jsr random_level
-	rts
+	jmp random_level	; jsr random_level + rts
 
 pickup_item:
 	txa				; save X,Y
@@ -130,7 +125,7 @@ player_attack:
 	bcc @hit
 	ldx #<youmiss
 	ldy #>youmiss
-	bne @pr				; same as 'jmp @pr' but saves 1 byte
+	bne @pr				; always branches
  @hit:	stx MON_Y			; save X,Y
 	sty MON_X
 	ldx #<youhit
@@ -139,7 +134,11 @@ player_attack:
 	ldx MON_Y			; restore X,Y
 	ldy MON_X
 	jsr damage_flash
-	jsr remove_enemy
+	; remove enemy
+	lda #COLOR_EXPLORED
+	sta CUR_COLOR
+	lda #CHR_FLOOR
+	jsr plot
 	; drop loot
 	jsr rand8
 	cmp #LOOT_DROP
@@ -150,13 +149,12 @@ player_attack:
 	; set loot color
 	and #$ff-64
 	tay
-	lda colors-SCR_WALL,y
+	lda colors,y
 	ldy MON_X
 	sta (COLOR_PTR),y
 @noloot:ldx #<mondie
 	ldy #>mondie
-@pr:	jsr print_msg
-	rts
+@pr:	jmp print_msg			; jsr print_msg + rts
 
 	;*****************************************************************
 	; player damage
