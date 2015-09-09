@@ -76,7 +76,6 @@ open_door:
 	sta CUR_COLOR
 	lda #CHR_FLOOR
 	jsr plot
-	jsr reveal_area
 	ldx #<opened
 	ldy #>opened
 	jmp print_msg		; jsr print_msg + rts

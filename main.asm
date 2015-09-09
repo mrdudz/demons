@@ -14,7 +14,7 @@ MAX_ENEMIES	= 16
 PLAYER_ACCURACY	= 140
 ENEMY_ACCURACY	= 70
 LOOT_DROP	= 30
-MSG_DELAY	= 33		; message delay length in 1/60 seconds
+MSG_DELAY	= 25		; message delay length in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 0
 
@@ -117,6 +117,11 @@ MON_Y		= $21
 MON_COLOR	= $23
 RANDOM_SEED	= $24		; TODO: initialize seed from raster pos or jiffy clock
 DELAY_TMP	= $25		; temp for delay routine
+reveal_x	= $26		; reveal area vars
+reveal_y 	= $27
+reveal_dx	= $28
+reveal_dy 	= $29
+reveal_tmp	= $30
 ; these are updated by kernal's PLOT routine
 LINE_PTR	= $d1		; pointer to current line is stored in $d1-$d2
 CURSOR_X	= $d3
@@ -197,11 +202,6 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	.endif
 	jsr random_level
 
-	; reveal first area
-	ldy PX
-	ldx PY
-	jsr reveal_area
-
 	; draw welcome message
 	ldx #<welcome
 	ldy #>welcome
@@ -220,11 +220,7 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 mainloop:
 	jsr waitkey
 	jsr update_player
-
-	ldy PX
-	ldx PY
-	jsr reveal_area
-
+	jsr reveal
 	jsr update_enemies
 
 	; test check walls
@@ -331,7 +327,34 @@ random_level:
 	jsr init_stairs
 	jsr init_enemies
 	jsr init_items
-	rts
+
+	; test level for reveal routine
+	.if 0
+	ldx #1
+	lda #SCR_FLOOR
+@floop: sta $1e00+22*2,x
+	sta $1e00+22*3,x
+	sta $1e00+22*4,x
+	sta $1e00+22*5,x
+	sta $1e00+22*6,x
+	sta $1e00+22*7,x
+	sta $1e00+22*8,x
+	sta $1e00+22*9,x
+	sta $1e00+22*10,x
+	sta $1e00+22*11,x
+	sta $1e00+22*12,x
+	sta $1e00+22*13,x
+	sta $1e00+22*14,x
+	sta $1e00+22*15,x
+	sta $1e00+22*16,x
+	sta $1e00+22*17,x
+	inx
+	cpx #21
+	bne @floop
+	jsr init_player
+	.endif
+
+	jmp reveal	; jsr reveal + rts
 
 	;*****************************************************************
 	; initialize stairs
@@ -418,9 +441,113 @@ check_walls:
 @dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
 
 	;*****************************************************************
+	; reveal area
+	; inspired by Aleksi Eeben's Whack
+	;*****************************************************************
+
+reveal:	lda #1			; top-right segment
+	sta reveal_dx
+	lda #$ff
+	sta reveal_dy
+	jsr @doseg
+
+	lda #1			; bottom-right segment
+	sta reveal_dy
+	jsr @doseg
+
+	lda #$ff		; bottom-left segment
+	sta reveal_dx
+	jsr @doseg
+
+	lda #$ff		; top-left segment
+	sta reveal_dy
+	;jsr @doseg
+	;rts
+
+@doseg:	; horiz
+	lda PX			; start at player
+	sta reveal_x
+	lda PY
+	sta reveal_y
+@hloop:	ldy reveal_x
+	ldx reveal_y
+	jsr move
+	jsr @reveal_cell
+	beq @vert		; done if blocked
+	lda reveal_x
+	clc
+	adc reveal_dx
+	sta reveal_x
+	bpl @hloop		; always branches
+	; vert
+@vert:	lda PX			; start at player
+	sta reveal_x
+	lda PY
+	sta reveal_y
+@vloop:	ldy reveal_x
+	ldx reveal_y
+	jsr move
+	jsr @reveal_cell
+	beq @block		; done if blocked
+	lda reveal_y
+	clc
+	adc reveal_dy
+	sta reveal_y
+	bne @vloop		; always branches
+@block:	rts
+
+@reveal_cell:
+	; reveal cell
+	jsr @mark_cell_visible
+	; stop at wall or door cell
+	cpx #SCR_WALL
+	beq @end
+	cpx #SCR_DOOR
+	beq @end
+	; --- spawn diagonal ray ---
+	ldy reveal_x
+	ldx reveal_y
+@diag:	jsr move
+	; reveal cell
+	stx reveal_tmp		; save X
+	jsr @mark_cell_visible	; trashes X
+	; stop at wall or door cell
+	cpx #SCR_WALL
+	beq @end2
+	cpx #SCR_DOOR
+	beq @end2
+	ldx reveal_tmp		; restore X
+	; step diagonally
+	tya
+	clc
+	adc reveal_dx
+	tay
+	txa
+	clc
+	adc reveal_dy
+	tax
+	;jsr delay
+	bpl @diag		; always branch
+@end2:	lda #1			; clear Z
+@end:	; Z set if blocked
+	rts
+
+@mark_cell_visible:
+	lda (LINE_PTR),y
+	tax			; X = screen code to be revealed
+	lda (COLOR_PTR),y
+	cmp #COLOR_UNSEEN	; don't touch already seen blocks (preserves monster colors)
+	and #7
+	bne @skip
+	lda colors,x
+	sta (COLOR_PTR),y
+@skip:	rts
+
+	;*****************************************************************
 	; reveal area, in: X,Y = row,col
 	;*****************************************************************
 
+	.if 0
 reveal_area:
 	jsr move
 
@@ -477,8 +604,8 @@ reveal_area:
 	tay
 	pla
 	tax
-
 @done:	rts
+	.endif
 
 	;*****************************************************************
 	; moves cursor to row X, column Y

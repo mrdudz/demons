@@ -102,3 +102,7 @@ animated tiles (update char ram):
 - water/lava vertical scrolling
 - monster animation by mirroring char data (how to efficiently do bit reverse?)
 - targetting: update character dynamically (inverse of character below cursor)
+
+xxx:
+- $E094: Perform RND. To get RND(1) functionality, enter at $E0BB. It will leave its value in (FAC). 
+- level theme: darkness, line of sight limited to 1 cell
