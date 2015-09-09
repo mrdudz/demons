@@ -153,6 +153,10 @@ enemy_attack:
 	ldx #<monmiss
 	ldy #>monmiss
 	jsr print_msg
+	ldx PY
+	ldy PX
+	jsr move
+	jsr miss_flash
 	jmp @end
 @hit:	; hit
 	ldx #<monhit

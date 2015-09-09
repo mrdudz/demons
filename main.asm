@@ -87,6 +87,8 @@ SCR_WIZARD	= 20
 SCR_DEMON	= 21
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
+SCR_DAMAGE_H	= 45 + $80
+SCR_DAMAGE_V	= 93 + $80
 
 ; color codes
 COLOR_BLACK	= 0
@@ -122,6 +124,7 @@ reveal_y 	= $27
 reveal_dx	= $28
 reveal_dy 	= $29
 reveal_tmp	= $30
+damage_char	= $31		; temp for damage flash
 ; these are updated by kernal's PLOT routine
 LINE_PTR	= $d1		; pointer to current line is stored in $d1-$d2
 CURSOR_X	= $d3
@@ -742,14 +745,19 @@ print_msg:
 	;*****************************************************************
 
 damage_flash:
+	lda #SCR_DAMAGE
+	ldy #COLOR_YELLOW
+damage_flash2:
+	sta damage_char
+	sty CUR_COLOR
 	ldy CURSOR_X
 	lda (LINE_PTR),y
 	pha			; save char
 	lda (COLOR_PTR),y
 	pha			; save color
-	lda #SCR_DAMAGE
+	lda damage_char
 	sta (LINE_PTR),y
-	lda #COLOR_YELLOW
+	lda CUR_COLOR
 	sta (COLOR_PTR),y
 	jsr delay
 	pla			; restore color
@@ -759,6 +767,16 @@ damage_flash:
 	lda #0			; reset flood counter
 	sta MSG_TIME
 	rts
+
+miss_flash:
+	lda PX
+	cmp MON_X
+	beq @ver
+	lda #SCR_DAMAGE_H
+	bne @hor		; always branch
+@ver:	lda #SCR_DAMAGE_V
+@hor:	ldy #COLOR_WHITE
+	jmp damage_flash2	; jsr damage_flash2 + rts
 
 	;*****************************************************************
 	; update hp

@@ -117,6 +117,8 @@ mul3:	.byte 0,3,6,9
 	;*****************************************************************
 
 player_attack:
+	stx MON_Y			; save target's coordinates
+	sty MON_X
 	lda (LINE_PTR),y
 	sta CUR_NAME			; store current monster
 	jsr rand8
@@ -124,10 +126,12 @@ player_attack:
 	bcc @hit
 	ldx #<youmiss
 	ldy #>youmiss
-	bne @pr				; always branches
- @hit:	stx MON_Y			; save X,Y
-	sty MON_X
-	ldx #<youhit
+	jsr print_msg
+	ldx MON_Y			; restore X,Y
+	ldy MON_X
+	jmp miss_flash			; jsr miss_flash + rts
+	;rts
+ @hit:	ldx #<youhit
 	ldy #>youhit
 	jsr print_msg
 	ldx MON_Y			; restore X,Y
