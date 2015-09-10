@@ -125,8 +125,8 @@ reveal_dx	= $28
 reveal_dy 	= $29
 reveal_tmp	= $30
 damage_char	= $31		; temp for damage flash
-; these are updated by kernal's PLOT routine
-LINE_PTR	= $d1		; pointer to current line is stored in $d1-$d2
+music_pos	= $32		; $32-$33 = current music position
+LINE_PTR	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 CURSOR_X	= $d3
 CURSOR_Y	= $d6
 
