@@ -9,6 +9,7 @@ Player is a druid. To become a grandmaster of his circle, he must defeat three d
 TODO:
 - fix player/stairs placement so that stairs are always at least X cells away
 - RNG is terrible, same levels can repeat during a play session (only 256 different levels)
+	-- $E094: Perform RND. To get RND(1) functionality, enter at $E0BB. It will leave its value in (FAC). 
 
 optimization ideas:
 - self-modifying to save loop registers
@@ -19,6 +20,13 @@ levels:
 - stairway does not appear before demon is defeated
 - special level themes: lava, water, ???
 - special items (weapons, etc.) are useful for defeating demons, hidden in levels
+
+special levels:
+- 6: demon of worms, worms, staff, altered color scheme
+- 12: demon of slime, slimes, cloak, altered color scheme
+- 18: demon of time, wizards/stalkers, altered color scheme
+- level theme water, stream of water crosses the level (modified drunken walk)
+- level theme: darkness, line of sight limited to 1 cell
 
 level generation:
 - start with a level filled with walls
@@ -48,8 +56,10 @@ monsters:
 - STALKER: white ' ', invisible except for void
 - SLIME: green 'S' slimes don't move, they spread to adjacent cells
 - WIZARD: purple '@' wizards can teleport and shoot lightning bolts
-- DEMON: yellow 'X' demons are immune to normal weapons
+- DEMON: yellow 'X'
 - DRAGON: red 'D'
+- TODO: WORM white 'w'
+- TODO: GOBLIN green 'g'
 
 - monster flags:
 	- MF_TOUGH			= 1	; when a hit would kill the monster, it is wounded instead (turns red)
@@ -73,28 +83,42 @@ monster conditions:
 	- e.g. snakes are green and therefore don't have poisoned condition
 - wounded (red)
 - frozen/slowed (cyan), works with all monsters because no monster is cyan normally
-- poisoned (green):
-	- monster is only considered to be poisoned if its native color is not green
-	- orcs should probably be red...
+
+player condition:
+- poisoned (health bar green)
 
 items:
 - scrolls & potions: effect is determined by color ram
 - items are picked up by walking over them (message "Found potion.")
 - gem: reveals level map when picked up
 - gold: increases score when picked up
-- magic weapon: needed to fight demons
-- magic armor: increases defence
-- ankh/amulet ??
 - usable items:
 	- POTION (f1): heals
 	- SKULL (f3): destroys all visible creatures (screen shake & sound)
 	- SCROLL (f5): magic missile? invisibility?
 	- KEY (f7): opens locked door
 
+key items (hidden behind secret doors?):
+- cloak: gives extra health? protects against poison?
+- staff ('/'): enables cast 'z' command, casts firebolt / icebolt, limited number of charges
+  'z' => "dir?"
+- ankh (need custom char!): dispels magical barriers? timestop?
+- only when possession all three key items can the final demon be killed?
+
+the end:
+- void
+- mysterious @ appears: well done my child!
+- show huge ankh on the screen with final score
+
 status bar:
 - displayed at the bottom of the screen:
 	HHHHHH P1 S1 S1 K1 ABC
 	(H=hearts/half-hearts, P=potions, S=skulls, S=scrolls, K=keys, A=magic weapon, B=magic armor, C=ankh)
+
+level up:
+- xp=xp+1 when a monster is killed
+- gain level when xp > level*4
+- health+1 at level up
 
 animated tiles (update char ram):
 - room for 64 characters (including alphabets,numbers,commas etc.), takes 512 bytes at end of ram
@@ -102,7 +126,3 @@ animated tiles (update char ram):
 - water/lava vertical scrolling
 - monster animation by mirroring char data (how to efficiently do bit reverse?)
 - targetting: update character dynamically (inverse of character below cursor)
-
-xxx:
-- $E094: Perform RND. To get RND(1) functionality, enter at $E0BB. It will leave its value in (FAC). 
-- level theme: darkness, line of sight limited to 1 cell
