@@ -1,6 +1,6 @@
-SONG_LENGTH	= 4	; must be power of two
+SONG_LENGTH	= 2
 PATTERN_LENGTH	= 16
-TEMPO		= 40
+TEMPO		= 2
 
 	;*****************************************************************
 	; init music
@@ -9,7 +9,7 @@ TEMPO		= 40
 init_music:
 	lda #0			; reset music position
 	sta music_pos
-	sta music_pos+1
+	sta song_pos
 	lda #15			; set music volume
 	sta $900e
 	sei
@@ -29,21 +29,22 @@ irq:	lda music_pos		; increment music pos
 	adc #TEMPO 
 	sta music_pos
 	bcc @skip
-	inc music_pos+1		; NOTE: music pos will overflow after 16 song rows!
+	; increment song pos
+	inc song_pos
+	lda song_pos
+	cmp #SONG_LENGTH
+	bne @skip
+	lda #0
+	sta song_pos
 @skip:
 
-	; loop song
-; 	lda music_pos+1
-; 	cmp #SONG_LENGTH*PATTERN_LENGTH
-; 	bmi @sok
-; 	lda #0
-; 	sta music_pos+1
-; @sok:
-
 	; pattern position
-	lda music_pos+1
-	and #PATTERN_LENGTH-1
+	lda music_pos
 	lsr
+	lsr
+	lsr
+	lsr			; A = pattern position
+	lsr			; A = pattern position/2
 	sta pattern_pos
 	lda #$f0		; note mask $f0
 	bcc @skip2
@@ -51,12 +52,32 @@ irq:	lda music_pos		; increment music pos
 @skip2:	sta note_mask
 
 	; song position
-	lda music_pos+1
-	lsr
-	lsr
-	;and #$ff-3		; music pos / 4 * 4
-	and #(SONG_LENGTH-1)*4
+	lda song_pos
+	asl
+	asl
 	tax			; x = song position * 4
+
+	.if 0
+	; print patterns
+	pha
+	lda song,x
+	clc
+	adc #'0'+$80
+	sta SCREEN
+	lda song+1,x
+	clc
+	adc #'0'+$80
+	sta SCREEN+1
+	lda song+2,x
+	clc
+	adc #'0'+$80
+	sta SCREEN+2
+	lda song+3,x
+	clc
+	adc #'0'+$80
+	sta SCREEN+3
+	pla
+	.endif
 
 	; play bass
 	lda song,x		; A = bass pattern
@@ -116,8 +137,6 @@ paterns:.byte $10,$00,$10,$10,$00,$10,$10,$00	; bass 1
 	; song data, 4 bytes per row
 song:	.byte $00,$02,$04,$06
 	.byte $01,$03,$05,$07
-	.byte $00,$00,$00,$07
-	.byte $00,$00,$00,$07
 
 	; note lookup tables
 notelut:.byte $00,$9c,$bd,$b5,$c1,$a7,$ac	; bass & alto & soprano
