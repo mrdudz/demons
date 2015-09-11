@@ -16,7 +16,7 @@ LOOT_DROP	= 30
 INVISIBLE_TIME	= 45
 MSG_DELAY	= 30		; message delay length in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
-MUSIC		= 0
+MUSIC		= 1
 
 ; kernal routines
 CHROUT		= $ffd2
@@ -200,6 +200,13 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	lda #CHR_CLR_HOME		; clear screen
 	jsr CHROUT
 
+	; init zero page vars to zero
+	ldx #$50
+	lda #0
+@zp:	sta $0,x
+	dex
+	bpl @zp
+
 	; init status bar
 	ldx #21
 @stat:	lda statscr,x
@@ -210,14 +217,10 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	bpl @stat
 
 	; init game vars
-	lda #1
-	sta dungeon_level
+	inc dungeon_level
 	lda #INITIAL_HP
 	sta hp
 	sta max_hp
-	lda #0
-	sta turn
-	sta gold
 
 	jsr update_hp
 	.if MUSIC
