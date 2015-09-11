@@ -14,11 +14,15 @@ PLAYER_ACCURACY	= 140
 ENEMY_ACCURACY	= 80
 LOOT_DROP	= 30
 INVISIBLE_TIME	= 45
-MSG_DELAY	= 30		; message delay length in 1/60 seconds
+SCORE_MONSTER	= 1
+SCORE_GOLD	= 10
+SCORE_DEMON	= 100
+MSG_DELAY	= 25		; message delay length in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
 ; kernal routines
+PRINT_INT	= $ddcd		; print 16-bit integer in X/A (undocumented basic routine)
 CHROUT		= $ffd2
 GETIN		= $ffe4
 PLOT		= $fff0
@@ -117,8 +121,7 @@ invisibility	= $a
 dungeon_level	= $b
 gold		= $c
 turn		= $d
-;		= $e
-;		= $f
+score		= $e		; $e-$f = 16-bit score
 ;		= $10
 ;		= $11
 rndloc_tmp	= $12
@@ -916,6 +919,18 @@ waitkey:jsr GETIN
 	rts
 
 	;*****************************************************************
+	; increase score by A
+	;*****************************************************************
+
+add_score:
+	clc
+	adc score
+	sta score
+	bcc @skip
+	inc score+1
+@skip:	rts
+
+	;*****************************************************************
 	; data
 	;*****************************************************************
 
@@ -923,7 +938,7 @@ welcome:.byte "DEMONS OF DEX",0
 descend:.byte "DESCENDING...",0
 youhit:	.byte "YOU HIT THE %!",0
 youmiss:.byte "YOU MISS.",0
-youdie: .byte "YOU DIE!",0
+youdie: .byte "YOU DIE! SCORE:",0
 monhit: .byte "% HITS YOU!",0
 monmiss:.byte "% MISSES!",0
 mondie:	.byte "THE % IS DEAD!",0

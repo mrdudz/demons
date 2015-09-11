@@ -106,7 +106,13 @@ pickup_item:
 	pha
 	lda (line_ptr),y		; store name
 	sta cur_name
-	tax
+	cmp #SCR_GOLD
+	bne @notgp
+	; gold found
+	lda #SCORE_GOLD
+	jsr add_score
+	jmp @skip
+@notgp:	tax
 	lda mul3-SCR_POTION,x
 	tax				; X = item type * 3
 	lda potions,x
@@ -173,7 +179,13 @@ player_attack:
 	lda colors,y
 	ldy mon_x
 	sta (color_ptr),y
-@noloot:ldx #<mondie
+@noloot:lda #SCORE_MONSTER		; add score
+	ldy cur_name
+	cpy #SCR_DEMON
+	bne @ndemon
+	lda #SCORE_DEMON
+@ndemon:jsr add_score
+	ldx #<mondie
 	ldy #>mondie
 @pr:	jmp print_msg			; jsr print_msg + rts
 
@@ -201,8 +213,23 @@ player_die:
 	ldx #<youdie
 	ldy #>youdie
 	jsr print_msg
-@loop:	jsr waitkey	; wait space
+	; print score
+	ldx #0
+	ldy #16
+	jsr move
+	ldx score
+	lda score+1
+	jsr PRINT_INT
+	lda #'0'			; print extra zero so that scores look higher
+	jsr CHROUT
+	ldx #6				; rebase characters to start from $80
+@reb: 	lda SCREEN+16,x
+	ora #$80
+	sta SCREEN+16,x
+	dex
+	bpl @reb
+
+@loop:	jsr waitkey			; wait space
 	cmp #32
 	bne @loop
 	jmp start
-	
