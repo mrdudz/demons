@@ -4,25 +4,24 @@
 ; (C) 2015 Petri Hakkinen. All rights reserved.
 ;*****************************************************************
 
-; constants
 SCREEN 		= $1e00
 COLOR_RAM	= $9600
-SCREEN_WIDTH	= 22
-SCREEN_HEIGHT	= 23
+
+; constants
 INITIAL_HP	= 6
 MAX_ENEMIES	= 16
 PLAYER_ACCURACY	= 140
-ENEMY_ACCURACY	= 70
+ENEMY_ACCURACY	= 80
 LOOT_DROP	= 30
+INVISIBLE_TIME	= 45
 MSG_DELAY	= 25		; message delay length in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 0
 
 ; kernal routines
 CHROUT		= $ffd2
-PLOT		= $fff0
 GETIN		= $ffe4
-CUR_COLOR	= $0286
+PLOT		= $fff0
 
 ; char codes
 CHR_WHITE	= 5
@@ -39,6 +38,10 @@ CHR_LEFT 	= 157
 CHR_RIGHT	= 29
 CHR_HOME	= 19
 CHR_CLR_HOME	= 147
+CHR_F1		= 133
+CHR_F3		= 134
+CHR_F5		= 135
+CHR_F7		= 136
 CHR_HEART	= 64
 CHR_HALF_HEART	= 65
 CHR_DAMAGE	= 66
@@ -103,22 +106,30 @@ COLOR_UNSEEN	= COLOR_BLACK
 COLOR_EXPLORED	= COLOR_CYAN
 
 ; zero page variables
-TMP_PRINT	= $8		; $8-$9 = temp pointer for print_msg
-PX		= $10
-PY		= $11
-RNDLOC_TMP	= $12
-COLOR_PTR	= $13		; $13-$14 = pointer to current line in color ram
-CUR_NAME	= $15		; current monster/item index for print
-DUNGEON_LEVEL	= $16
-GOLD		= $1b
-HP		= $1c
-TURN		= $1d
-MSG_TIME	= $1e		; last time print message was called
-MON_X		= $20		; current monster position
-MON_Y		= $21
-MON_COLOR	= $23
-RANDOM_SEED	= $24		; TODO: initialize seed from raster pos or jiffy clock
-DELAY_TMP	= $25		; temp for delay routine
+print_tmp	= $2		; $2-$3 = temp pointer for print_msg
+walker_dx	= $4		; level generator
+walker_dy	= $5
+px		= $6		; player
+py		= $7
+hp		= $8
+max_hp		= $9
+invisibility	= $a
+dungeon_level	= $b
+gold		= $c
+turn		= $d
+;		= $e
+;		= $f
+;		= $10
+;		= $11
+rndloc_tmp	= $12
+color_ptr	= $13		; $13-$14 = pointer to current line in color ram
+cur_name	= $15		; current monster/item index for print
+msg_time	= $1f		; last time print message was called
+mon_x		= $20		; current monster position
+mon_y		= $21
+mon_color	= $23
+random_seed	= $24		; TODO: initialize seed from raster pos or jiffy clock
+delay_tmp	= $25		; temp for delay routine
 reveal_x	= $26		; reveal area vars
 reveal_y 	= $27
 reveal_dx	= $28
@@ -130,20 +141,21 @@ pattern_row	= $33		; current row 0-31
 pattern_row2	= $34		; pattern row/2
 song_pos	= $35
 note_mask	= $36		; temp for music routine
-LINE_PTR	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
-CURSOR_X	= $d3
-CURSOR_Y	= $d6
+line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
+cursor_x	= $d3
+cursor_y	= $d6
 
-; misc data
+; other variables
 ; NOTE: unused memory in tape buffer $033c-$03ff
-BLOCKED_CELLS	= $0100		; 22 byte temp array in stack page for enemy update routine
-POTIONS		= SCREEN+492	; item counts are stored in screen ram
-GEMS		= POTIONS+3
-SCROLLS		= GEMS+3
-SKULLS		= SCROLLS+3
+blocked_cells	= $0100		; 22 byte temp array in stack page for enemy update routine
+cur_color	= $0286		; color for CHROUT
+potions		= SCREEN+492	; item counts are stored in screen ram
+gems		= potions+3
+scrolls		= gems+3
+skulls		= scrolls+3
 
 ; VIC registers
-VIC_COLORS	= $900f
+vic_colors	= $900f
 
 	.byt $01,$10			; PRG file header (starting address of the program)
 
@@ -167,7 +179,7 @@ bend:	.word 0           		; end of program
 start:	ldx #$ff			; empty stack (we never get back to basic)
 	txs
 	lda #8
-	sta VIC_COLORS
+	sta vic_colors
 	lda #$80			; turn on key repeat for all keys
 	sta $028a
 	lda #$ff			; set character base to $1c00
@@ -196,12 +208,13 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 
 	; init game vars
 	lda #1
-	sta DUNGEON_LEVEL
+	sta dungeon_level
 	lda #INITIAL_HP
-	sta HP
+	sta hp
+	sta max_hp
 	lda #0
-	sta TURN
-	sta GOLD
+	sta turn
+	sta gold
 
 	jsr update_hp
 	.if MUSIC
@@ -232,8 +245,8 @@ mainloop:
 
 	; test check walls
 	.if 0
-	ldy PX
-	ldx PY
+	ldy px
+	ldx py
 	jsr move
 	jsr check_walls
 	ldy #0
@@ -242,7 +255,14 @@ mainloop:
 	jsr print_hex
 	.endif
 
-	inc TURN
+	; update invisibility
+	dec invisibility
+	bne @skip
+	lda #COLOR_WHITE
+	sta plcolor
+@skip:
+
+	inc turn
 	jmp mainloop
 
 	;*****************************************************************
@@ -264,20 +284,17 @@ random_level:
 	jsr clearscreen
 
 	lda #COLOR_UNSEEN
-	sta CUR_COLOR
+	sta cur_color
 
 	; init walker
-	; X,Y = x,y
-	; $4,$5 = dx,dy
-	; $6 = counter
-	ldx #10		; x = 10
-	ldy #11		; y = 11
+	ldx #10			; x = 10
+	ldy #11			; y = 11
 	lda #1
-	sta $4		; dx = 1
+	sta walker_dx		; dx = 1
 	lda #0
-	sta $5		; dy = 0
+	sta walker_dy		; dy = 0
 	; size of level can be adjusted by changing counter's initial value
-	sta $6		; counter = 0
+	sta $0			; counter = 0
 	
 	; random initial turn
 	jsr rand8
@@ -293,14 +310,14 @@ random_level:
 	; move walker
 	txa
 	clc
-	adc $4		; x = x + dx
+	adc walker_dx		; x = x + dx
 	tax
 	tya
 	clc
-	adc $5		; y = y + dy
+	adc walker_dy		; y = y + dy
 	tay
-	inc $6		; counter++
-	beq @done	; done when counter ovewflows
+	inc $0			; counter++
+	beq @done		; done when counter ovewflows
 
 	; turn at edge
 	cpx #2
@@ -318,14 +335,14 @@ random_level:
 	bcs @loop
 
 	; turn (dx,dy = dy,-dx)
-@turn:	lda $5
-	pha		; dy to stack
+@turn:	lda walker_dy
+	pha			; dy to stack
 	lda #0
 	sec
-	sbc $4
-	sta $5		; dy' = -dx
+	sbc walker_dx
+	sta walker_dy		; dy' = -dx
 	pla
-	sta $4		; dx' = dy
+	sta walker_dx		; dx' = dy
 
 	jmp @loop
 
@@ -384,7 +401,7 @@ init_doors:
 @xloop:	jsr move		; move cursor
 	tya			; save Y
 	pha
-	lda (LINE_PTR),y
+	lda (line_ptr),y
 	cmp #SCR_FLOOR
 	bne @skip
 	jsr check_walls
@@ -428,8 +445,8 @@ check_walls:
 	; read screen code under cursor
 	tya		; save y
 	pha
-	ldy CURSOR_X
-	lda (LINE_PTR),y
+	ldy cursor_x
+	lda (line_ptr),y
 	cmp #SCR_FLOOR
 	beq @floor
 	; obstacle found, set bit
@@ -472,8 +489,8 @@ reveal:	lda #1			; top-right segment
 	;rts
 
 @doseg:	; horiz pass
-	ldy PX			; start at player
-	ldx PY
+	ldy px			; start at player
+	ldx py
 @hloop:	jsr move
 	jsr @reveal_cell
 	beq @vert		; done if blocked
@@ -486,8 +503,8 @@ reveal:	lda #1			; top-right segment
 	bpl @hloop		; always branches
 
 	; vert pass
-@vert:	ldy PX			; start at player
-	ldx PY
+@vert:	ldy px			; start at player
+	ldx py
 @vloop:	jsr move
 	jsr @reveal_cell
 	beq @block		; done if blocked
@@ -539,14 +556,14 @@ reveal:	lda #1			; top-right segment
 	rts
 
 @mark_cell_visible:
-	lda (LINE_PTR),y
+	lda (line_ptr),y
 	tax			; X = screen code to be revealed
-	lda (COLOR_PTR),y
+	lda (color_ptr),y
 	cmp #COLOR_UNSEEN	; don't touch already seen blocks (preserves monster colors)
 	and #7
 	bne @skip
 	lda colors,x
-	sta (COLOR_PTR),y
+	sta (color_ptr),y
 @skip:	rts
 
 	;*****************************************************************
@@ -561,23 +578,23 @@ reveal_area:
 	tsx
 	cpx #$c0
 	bcc @done
-	ldx CURSOR_Y
+	ldx cursor_y
 
 	; fetch cell color, stop recursion if cell already revealed
-	lda (COLOR_PTR),y
+	lda (color_ptr),y
 	and #7			; color ram is 4-bit wide, high nibble contains garbage
 	cmp #COLOR_UNSEEN
 	bne @done
 
 	; reveal cell
-	lda (LINE_PTR),y
+	lda (line_ptr),y
 	tax			; X = screen code to be revealed
 	lda colors,x
-	sta (COLOR_PTR),y
-	ldx CURSOR_Y		; restore X
+	sta (color_ptr),y
+	ldx cursor_y		; restore X
 
 	; stop recursion at wall or door cell
-	lda (LINE_PTR),y
+	lda (line_ptr),y
 	cmp #SCR_WALL
 	beq @done
 	cmp #SCR_DOOR
@@ -624,12 +641,12 @@ move:	pha		; store A,X,Y
 	pha
 	clc
 	jsr PLOT	; trashes A,X,Y
-	lda LINE_PTR
-	sta COLOR_PTR
-	lda LINE_PTR+1
+	lda line_ptr
+	sta color_ptr
+	lda line_ptr+1
 	clc
 	adc #$96-$1e
-	sta COLOR_PTR+1
+	sta color_ptr+1
 	pla		; restore A,X,Y
 	tay
 	pla
@@ -694,18 +711,18 @@ print_hex:
 
 print_msg:
 	; prevent flooding messages on same turn
-	lda MSG_TIME
-	cmp TURN
-	bne @skip
+	lda msg_time
+	cmp turn
+	bne print_msg2
 	jsr delay
-@skip:	lda TURN
-	sta MSG_TIME
-	;
-	stx TMP_PRINT
-	sty TMP_PRINT+1
+print_msg2:
+	lda turn
+	sta msg_time
+	stx print_tmp
+	sty print_tmp+1
 	ldx #0		; X = screen pos
 	ldy #0		; Y = text pos 
-@loop1: lda (TMP_PRINT),y
+@loop1: lda (print_tmp),y
 	beq @chk
 	iny
 	cmp #'%'
@@ -727,7 +744,7 @@ print_msg:
 @print_name:
 	tya		; save Y
 	pha
-	lda CUR_NAME
+	lda cur_name
 	asl
 	asl
 	asl
@@ -753,28 +770,28 @@ damage_flash:
 	ldy #COLOR_YELLOW
 damage_flash2:
 	sta damage_char
-	sty CUR_COLOR
-	ldy CURSOR_X
-	lda (LINE_PTR),y
+	sty cur_color
+	ldy cursor_x
+	lda (line_ptr),y
 	pha			; save char
-	lda (COLOR_PTR),y
+	lda (color_ptr),y
 	pha			; save color
 	lda damage_char
-	sta (LINE_PTR),y
-	lda CUR_COLOR
-	sta (COLOR_PTR),y
+	sta (line_ptr),y
+	lda cur_color
+	sta (color_ptr),y
 	jsr delay
 	pla			; restore color
-	sta (COLOR_PTR),y	
+	sta (color_ptr),y	
 	pla			; restore char
-	sta (LINE_PTR),y	
+	sta (line_ptr),y	
 	lda #0			; reset flood counter
-	sta MSG_TIME
+	sta msg_time
 	rts
 
 miss_flash:
-	lda PX
-	cmp MON_X
+	lda px
+	cmp mon_x
 	beq @ver
 	lda #SCR_DAMAGE_H
 	bne @hor		; always branch
@@ -794,7 +811,7 @@ update_hp:
 	dex
 	bne @loop1
 	; draw hearts
-	lda HP
+	lda hp
 	lsr		; lowest bit of hp goes to carry
 	tax		; does not affect carry
 	bcc @skip 	; carry clear -> dont draw half heart
@@ -831,10 +848,10 @@ clearscreen:
 	;*****************************************************************
 
 delay:	lda $a2
-	sta DELAY_TMP
+	sta delay_tmp
 @loop:	sec
 	lda $a2
-	sbc DELAY_TMP
+	sbc delay_tmp
 	cmp #MSG_DELAY
 	bcc @loop
 	rts
@@ -844,13 +861,13 @@ delay:	lda $a2
 	; source: http://codebase64.org/doku.php?id=base:small_fast_8-bit_prng
 	;*****************************************************************
 
-rand8:	lda RANDOM_SEED
+rand8:	lda random_seed
 	beq do_eor
 	asl
 	beq no_eor 	; if the input was $80, skip the EOR
 	bcc no_eor
 do_eor:	eor #$1d	; TODO: randomize eor value (see codebase64.org for suitable values)
-no_eor:	sta RANDOM_SEED
+no_eor:	sta random_seed
 	rts
 
 	;*****************************************************************
@@ -868,7 +885,7 @@ randomloc:
 	bpl randomloc
 	; pick random column
 	lda #0
-	sta RNDLOC_TMP		; max 256 tries on this row
+	sta rndloc_tmp		; max 256 tries on this row
 @rndcol:jsr rand8
 	and #31
 	tay
@@ -877,10 +894,10 @@ randomloc:
 	bpl @rndcol
 	; check that it is free
 	jsr move
-	lda (LINE_PTR),y
+	lda (line_ptr),y
 	cmp #SCR_FLOOR
 	beq @done
-	dec RNDLOC_TMP
+	dec rndloc_tmp
 	bne @rndcol
 	beq randomloc  		; always branches
 @done:	rts
@@ -909,6 +926,12 @@ mondie:	.byte "THE % IS DEAD!",0
 opened:	.byte "OPENED.",0
 block:	.byte "BLOCKED.",0
 found:	.byte "FOUND %.",0
+outof:	.byte "NO %S.",0
+useitem:.byte "USING %...",0
+usepot:	.byte "HEALED!",0
+usegem:	.byte "A VISION!",0
+usescr:	.byte "TURNED INVISIBLE!",0
+useskul:.byte "CHAOS!",0
 
 	; initial contents of status bar area in screen ram and color ram
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_SKULL,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
@@ -920,7 +943,7 @@ _names: .byte "POTION",0,0
 	.byte "GEM",0,0,0,0,0
 	.byte "SCROLL",0,0
 	.byte "SKULL",0,0,0
-	.byte "GOLD",0,0,0,0
+	.byte "gold",0,0,0,0
 	.byte "BAT",0,0,0,0,0
 	.byte "RAT",0,0,0,0,0
 	.byte "SNAKE",0,0,0
@@ -961,7 +984,7 @@ _colors:.byte COLOR_CYAN			; # wall
 	.byte COLOR_CYAN			; . floor
 	.byte COLOR_CYAN			; + door
 	.byte COLOR_WHITE			; > stairs
-	.byte COLOR_WHITE			; @ player
+plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_RED				; ! potion
 	.byte COLOR_GREEN			; (gem)
 	.byte COLOR_PURPLE			; ? scroll

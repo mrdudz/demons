@@ -5,8 +5,8 @@
 init_player:
 	ldx #10
 	ldy #11
-	stx PY
-	sty PX
+	stx py
+	sty px
 	lda #CHR_PLAYER
 	jmp plot	; jsr plot + rts
 
@@ -14,10 +14,12 @@ init_player:
 	; update player
 	;*****************************************************************
 
+	; 1899
+
 update_player:
 	; handle movement
-	ldy PX
-	ldx PY
+	ldy px
+	ldx py
 	; store old pos
 	stx $0
 	sty $1
@@ -29,7 +31,19 @@ update_player:
 	beq @left
 	cmp #'D' ;CHR_RIGHT
 	beq @right
-	rts
+	cmp #CHR_F1
+	bne @skipf1
+	jmp use_potion
+@skipf1:cmp #CHR_F3
+	bne @skipf3
+	jmp use_gem
+@skipf3:cmp #CHR_F5
+	bne @skipf5
+	jmp use_scroll
+@skipf5:cmp #CHR_F7
+	bne @skipf7
+	jmp use_skull
+@skipf7:rts
 
 @up:	dex
 	bne @move		; always branches
@@ -42,7 +56,7 @@ update_player:
 @move:	; X,Y = move target
 	jsr move
 	; check obstacle
-	lda (LINE_PTR),y
+	lda (line_ptr),y
 	cmp #SCR_WALL
 	beq blocked
 	cmp #SCR_STAIRS
@@ -55,10 +69,10 @@ update_player:
 	bpl pickup_item
 
 	; move player to X,Y
-movepl:	sty PX			; store new pos
-	stx PY
+movepl:	sty px			; store new pos
+	stx py
 	lda #COLOR_UNSEEN
-	sta CUR_COLOR
+	sta cur_color
 	lda #CHR_PLAYER
 	jsr plot		; draw player at new pos
 	ldx $0			; restore old pos
@@ -73,7 +87,7 @@ blocked:
 
 open_door:
 	lda #COLOR_UNSEEN
-	sta CUR_COLOR
+	sta cur_color
 	lda #CHR_FLOOR
 	jsr plot
 	ldx #<opened
@@ -84,7 +98,7 @@ enter_stairs:
 	ldx #<descend
 	ldy #>descend
 	jsr print_msg
-	inc DUNGEON_LEVEL
+	inc dungeon_level
 	jmp random_level	; jsr random_level + rts
 
 pickup_item:
@@ -92,15 +106,15 @@ pickup_item:
 	pha
 	tya
 	pha
-	lda (LINE_PTR),y		; store name
-	sta CUR_NAME
+	lda (line_ptr),y		; store name
+	sta cur_name
 	tax
 	lda mul3-SCR_POTION,x
 	tax				; X = item type * 3
-	lda POTIONS,x
+	lda potions,x
 	cmp #'9'+$80			; max 9 items per type
 	beq @skip
-	inc POTIONS,x 		
+	inc potions,x 		
 @skip:	ldx #<found			; print found
 	ldy #>found
 	jsr print_msg
@@ -117,44 +131,46 @@ mul3:	.byte 0,3,6,9
 	;*****************************************************************
 
 player_attack:
-	stx MON_Y			; save target's coordinates
-	sty MON_X
-	lda (LINE_PTR),y
-	sta CUR_NAME			; store current monster
+	lda #COLOR_WHITE
+	sta plcolor			; end invisibility
+	stx mon_y			; save target's coordinates
+	sty mon_x
+	lda (line_ptr),y
+	sta cur_name			; store current monster
 	jsr rand8
 	cmp #PLAYER_ACCURACY
 	bcc @hit
 	ldx #<youmiss
 	ldy #>youmiss
 	jsr print_msg
-	ldx MON_Y			; restore X,Y
-	ldy MON_X
+	ldx mon_y			; restore X,Y
+	ldy mon_x
 	jmp miss_flash			; jsr miss_flash + rts
 	;rts
  @hit:	ldx #<youhit
 	ldy #>youhit
 	jsr print_msg
-	ldx MON_Y			; restore X,Y
-	ldy MON_X
+	ldx mon_y			; restore X,Y
+	ldy mon_x
 	jsr damage_flash
 	; remove enemy
 	lda #COLOR_EXPLORED
-	sta CUR_COLOR
+	sta cur_color
 	lda #CHR_FLOOR
 	jsr plot
 	; drop loot
 	jsr rand8
 	cmp #LOOT_DROP
 	bcs @noloot
-	ldx MON_Y			; restore X,Y
-	ldy MON_X
+	ldx mon_y			; restore X,Y
+	ldy mon_x
 	jsr random_loot
 	; set loot color
 	and #$ff-64
 	tay
 	lda colors,y
-	ldy MON_X
-	sta (COLOR_PTR),y
+	ldy mon_x
+	sta (color_ptr),y
 @noloot:ldx #<mondie
 	ldy #>mondie
 @pr:	jmp print_msg			; jsr print_msg + rts
@@ -164,9 +180,9 @@ player_attack:
 	;*****************************************************************
 
 player_damage:
-	dec HP
+	dec hp
 	jsr update_hp
-	lda HP
+	lda hp
 	beq player_die
 	rts
 

@@ -7,6 +7,7 @@ Plot:
 Player is a druid. To become a grandmaster of his circle, he must defeat three demons in Dungeon Dex.
 
 TODO:
+- initial ZP variables to zero in loop (simpler setup, saves a few bytes)
 - fix player/stairs placement so that stairs are always at least X cells away
 - RNG is terrible, same levels can repeat during a play session (only 256 different levels)
 	-- $E094: Perform RND. To get RND(1) functionality, enter at $E0BB. It will leave its value in (FAC). 
