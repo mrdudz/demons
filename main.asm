@@ -42,58 +42,56 @@ CHR_F1		= 133
 CHR_F3		= 134
 CHR_F5		= 135
 CHR_F7		= 136
-CHR_HEART	= 64
-CHR_HALF_HEART	= 65
-CHR_DAMAGE	= 66
-CHR_WALL	= 67
-CHR_FLOOR	= 68
-CHR_DOOR	= 69
-CHR_STAIRS	= 70
-CHR_PLAYER	= 71
-CHR_POTION	= 72
-CHR_GEM		= 73
-CHR_SCROLL	= 74
-CHR_SKULL	= 75
-CHR_GOLD	= 76
-CHR_BAT		= 77
-CHR_RAT		= 78
-CHR_WORM	= 79
-CHR_SNAKE	= 80
-CHR_ORC		= 81
-CHR_UNDEAD	= 82
-CHR_STALKER	= 83
-CHR_SLIME	= 84
-CHR_WIZARD	= 85
-CHR_DEMON	= 86
+CHR_HALF_HEART	= 64
+CHR_WALL	= 65
+CHR_FLOOR	= 66
+CHR_DOOR	= 67
+CHR_STAIRS	= 68
+CHR_PLAYER	= 69
+CHR_POTION	= 70
+CHR_GEM		= 71
+CHR_SCROLL	= 72
+CHR_SKULL	= 73
+CHR_GOLD	= 74
+CHR_BAT		= 75
+CHR_RAT		= 76
+CHR_WORM	= 77
+CHR_SNAKE	= 78
+CHR_ORC		= 79
+CHR_UNDEAD	= 80
+CHR_STALKER	= 81
+CHR_SLIME	= 82
+CHR_WIZARD	= 83
+CHR_DEMON	= 84
 
 ; screen codes
-SCR_HEART	= 0
-SCR_HALF_HEART	= 1
-SCR_DAMAGE	= 2
-SCR_WALL	= 3
-SCR_FLOOR	= 4
-SCR_DOOR	= 5
-SCR_STAIRS	= 6
-SCR_PLAYER	= 7
-SCR_POTION	= 8
-SCR_GEM		= 9
-SCR_SCROLL	= 10
-SCR_SKULL	= 11
-SCR_GOLD	= 12
-SCR_BAT		= 13
-SCR_RAT		= 14
-SCR_WORM	= 15
-SCR_SNAKE	= 16
-SCR_ORC		= 17
-SCR_UNDEAD	= 18
-SCR_STALKER	= 19
-SCR_SLIME	= 20
-SCR_WIZARD	= 21
-SCR_DEMON	= 22
+SCR_HALF_HEART	= 0
+SCR_WALL	= 1
+SCR_FLOOR	= 2
+SCR_DOOR	= 3
+SCR_STAIRS	= 4
+SCR_PLAYER	= 5
+SCR_POTION	= 6
+SCR_GEM		= 7
+SCR_SCROLL	= 8
+SCR_SKULL	= 9
+SCR_GOLD	= 10
+SCR_BAT		= 11
+SCR_RAT		= 12
+SCR_WORM	= 13
+SCR_SNAKE	= 14
+SCR_ORC		= 15
+SCR_UNDEAD	= 16
+SCR_STALKER	= 17
+SCR_SLIME	= 18
+SCR_WIZARD	= 19
+SCR_DEMON	= 20
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
-SCR_DAMAGE_H	= 45 + $80
-SCR_DAMAGE_V	= 93 + $80
+SCR_DAMAGE	= 42 + $80
+SCR_MISS_H	= 45 + $80
+SCR_MISS_V	= 93 + $80
+SCR_HEART	= 83 + $80
 
 ; color codes
 COLOR_BLACK	= 0
@@ -799,9 +797,9 @@ miss_flash:
 	lda px
 	cmp mon_x
 	beq @ver
-	lda #SCR_DAMAGE_H
+	lda #SCR_MISS_H
 	bne @hor		; always branch
-@ver:	lda #SCR_DAMAGE_V
+@ver:	lda #SCR_MISS_V
 @hor:	ldy #COLOR_WHITE
 	jmp damage_flash2	; jsr damage_flash2 + rts
 
@@ -964,9 +962,7 @@ _names: .byte "POTION",0,0
 	.byte "DEMON",0,0,0
 
 	; user defined chars
-charset:.byte $36,$7f,$7f,$7f,$3e,$1c,$08,$00	; (heart)
-	.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
-	.byte $08,$2a,$1c,$3e,$1c,$2a,$08,$00	; * damage
+charset:.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
 	.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
 	.byte $00,$00,$00,$00,$00,$18,$18,$00	; . floor
 	.byte $ff,$f7,$f7,$c1,$f7,$f7,$ff,$ff	; + door
