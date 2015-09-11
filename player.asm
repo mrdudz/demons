@@ -14,8 +14,6 @@ init_player:
 	; update player
 	;*****************************************************************
 
-	; 1899
-
 update_player:
 	; handle movement
 	ldy px
@@ -153,8 +151,12 @@ player_attack:
 	ldx mon_y			; restore X,Y
 	ldy mon_x
 	jsr damage_flash
+	lda (color_ptr),y
+	and #7
+	cmp #COLOR_RED
+	bne @wound			; monster wounded
 	; remove enemy
-	lda #COLOR_EXPLORED
+@killit:lda #COLOR_EXPLORED
 	sta cur_color
 	lda #CHR_FLOOR
 	jsr plot
@@ -174,6 +176,15 @@ player_attack:
 @noloot:ldx #<mondie
 	ldy #>mondie
 @pr:	jmp print_msg			; jsr print_msg + rts
+
+@wound: jsr rand8			; 50% chance of killing when monster is wounded
+	cmp #$80
+	bpl @killit
+	lda #COLOR_RED
+	sta (color_ptr),y
+	ldx #<monwoun
+	ldy #>monwoun
+	bne @pr	
 
 	;*****************************************************************
 	; player damage

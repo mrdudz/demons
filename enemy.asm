@@ -180,7 +180,7 @@ enemy_attack:
 	;*****************************************************************
 
 	; random spawns, indexed with rand8() & 7 + level - 1
-spawns:	.byte CHR_BAT,CHR_RAT,CHR_RAT,CHR_RAT,CHR_BAT,CHR_BAT,CHR_SNAKE
+spawns:	.byte CHR_BAT,CHR_RAT,CHR_RAT,CHR_RAT,CHR_BAT,CHR_WORM,CHR_SNAKE
 	.byte CHR_RAT,CHR_SNAKE,CHR_SNAKE,CHR_BAT,CHR_RAT,CHR_UNDEAD,CHR_UNDEAD
 	.byte CHR_ORC,CHR_ORC,CHR_UNDEAD,CHR_STALKER,CHR_UNDEAD,CHR_STALKER,CHR_SNAKE
 	.byte CHR_ORC,CHR_SLIME,CHR_WIZARD,CHR_WIZARD

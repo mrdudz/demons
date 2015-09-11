@@ -14,7 +14,7 @@ PLAYER_ACCURACY	= 140
 ENEMY_ACCURACY	= 80
 LOOT_DROP	= 30
 INVISIBLE_TIME	= 45
-MSG_DELAY	= 25		; message delay length in 1/60 seconds
+MSG_DELAY	= 30		; message delay length in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 0
 
@@ -57,13 +57,14 @@ CHR_SKULL	= 75
 CHR_GOLD	= 76
 CHR_BAT		= 77
 CHR_RAT		= 78
-CHR_SNAKE	= 79
-CHR_ORC		= 80
-CHR_UNDEAD	= 81
-CHR_STALKER	= 82
-CHR_SLIME	= 83
-CHR_WIZARD	= 84
-CHR_DEMON	= 85
+CHR_WORM	= 79
+CHR_SNAKE	= 80
+CHR_ORC		= 81
+CHR_UNDEAD	= 82
+CHR_STALKER	= 83
+CHR_SLIME	= 84
+CHR_WIZARD	= 85
+CHR_DEMON	= 86
 
 ; screen codes
 SCR_HEART	= 0
@@ -81,13 +82,14 @@ SCR_SKULL	= 11
 SCR_GOLD	= 12
 SCR_BAT		= 13
 SCR_RAT		= 14
-SCR_SNAKE	= 15
-SCR_ORC		= 16
-SCR_UNDEAD	= 17
-SCR_STALKER	= 18
-SCR_SLIME	= 19
-SCR_WIZARD	= 20
-SCR_DEMON	= 21
+SCR_WORM	= 15
+SCR_SNAKE	= 16
+SCR_ORC		= 17
+SCR_UNDEAD	= 18
+SCR_STALKER	= 19
+SCR_SLIME	= 20
+SCR_WIZARD	= 21
+SCR_DEMON	= 22
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
 SCR_DAMAGE_H	= 45 + $80
@@ -925,6 +927,7 @@ monhit: .byte "% HITS YOU!",0
 monmiss:.byte "% MISSES!",0
 mondie:	.byte "THE % IS DEAD!",0
 mondies:.byte "% DIES!",0
+monwoun:.byte "% IS WOUNDED!",0
 opened:	.byte "OPENED.",0
 block:	.byte "BLOCKED.",0
 found:	.byte "FOUND %.",0
@@ -948,6 +951,7 @@ _names: .byte "POTION",0,0
 	.byte "GOLD",0,0,0,0
 	.byte "BAT",0,0,0,0,0
 	.byte "RAT",0,0,0,0,0
+	.byte "WORM",0,0,0,0
 	.byte "SNAKE",0,0,0
 	.byte "ORC", 0,0,0,0,0
 	.byte "UNDEAD",0,0
@@ -972,6 +976,7 @@ charset:.byte $36,$7f,$7f,$7f,$3e,$1c,$08,$00	; (heart)
 	.byte $08,$1e,$28,$1c,$0a,$3c,$08,$00	; $ gold
 	.byte $40,$40,$5c,$62,$42,$62,$5c,$00	; b bat
 	.byte $00,$00,$5c,$62,$40,$40,$40,$00	; r rat
+	.byte $00,$00,$41,$49,$49,$49,$36,$00	; w worm
 	.byte $00,$00,$3e,$40,$3c,$02,$7c,$00	; s snake
 	.byte $00,$00,$3c,$42,$42,$42,$3c,$00	; o orc
 	.byte $00,$00,$7e,$04,$18,$20,$7e,$00	; z undead
@@ -994,6 +999,7 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_YELLOW			; $ gold
 	.byte COLOR_RED				; b bat
 	.byte COLOR_RED				; r rat
+	.byte COLOR_WHITE			; w worm
 	.byte COLOR_GREEN			; s snake
 	.byte COLOR_GREEN			; o orc
 	.byte COLOR_WHITE			; z undead
