@@ -155,6 +155,7 @@ scrolls		= gems+3
 skulls		= scrolls+3
 
 ; VIC registers
+vic_scr_center	= $9000
 vic_colors	= $900f
 
 	.byt $01,$10			; PRG file header (starting address of the program)
@@ -923,6 +924,7 @@ youdie: .byte "YOU DIE!",0
 monhit: .byte "% HITS YOU!",0
 monmiss:.byte "% MISSES!",0
 mondie:	.byte "THE % IS DEAD!",0
+mondies:.byte "% DIES!",0
 opened:	.byte "OPENED.",0
 block:	.byte "BLOCKED.",0
 found:	.byte "FOUND %.",0
@@ -943,7 +945,7 @@ _names: .byte "POTION",0,0
 	.byte "GEM",0,0,0,0,0
 	.byte "SCROLL",0,0
 	.byte "SKULL",0,0,0
-	.byte "gold",0,0,0,0
+	.byte "GOLD",0,0,0,0
 	.byte "BAT",0,0,0,0,0
 	.byte "RAT",0,0,0,0,0
 	.byte "SNAKE",0,0,0

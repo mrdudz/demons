@@ -128,7 +128,69 @@ use_skull:
 	ldx #<useskul
 	ldy #>useskul
 	jsr print_msg
+	lda vic_scr_center	
+	sta $0			; $0 = old screen center value
+	ldx #0
+@loop:	jsr rand8
+	and #7
+	adc $0
+	sbc #3
+	sta vic_scr_center
+	ldy #0
+@loop2:	nop
+	nop
+	nop
+	dey			; delay
+	bne @loop2
+	dex
+	bne @loop
+	lda $0
+	sta vic_scr_center	; restore old screen center
+	jsr delay
+	; kill visible monsters
+	ldx #1
+	jsr @killall
+	ldx #11
+	jsr @killall
 @done:	rts
+
+@killall: ; reveal 256 bytes
+	ldy #0
+	jsr move
+	ldx #0
+@kloop:	jsr rand8
+	tay
+	lda (line_ptr),y
+	sta cur_name
+	cmp #SCR_BAT
+	bmi @skip		; skip non-monster cells
+	lda (color_ptr),y
+	and #7
+	cmp #COLOR_UNSEEN
+	beq @skip		; skip unseen cells
+	; kill
+	sty cursor_x
+	txa
+	pha
+	tya
+	pha
+	jsr damage_flash
+	ldx #<mondies
+	ldy #>mondies
+	jsr print_msg
+	pla
+	tay
+	pla
+	tax
+	lda #SCR_FLOOR
+	sta (line_ptr),y
+	lda #COLOR_EXPLORED
+	sta (color_ptr),y
+	jsr delay
+	jsr delay
+@skip:	dex
+	bne @kloop
+	rts
 
 	;*****************************************************************
 	; use item
