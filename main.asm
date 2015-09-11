@@ -16,7 +16,7 @@ ENEMY_ACCURACY	= 70
 LOOT_DROP	= 30
 MSG_DELAY	= 25		; message delay length in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
-MUSIC		= 1
+MUSIC		= 0
 
 ; kernal routines
 CHROUT		= $ffd2
@@ -125,10 +125,11 @@ reveal_dx	= $28
 reveal_dy 	= $29
 reveal_tmp	= $30
 damage_char	= $31		; temp for damage flash
-music_pos	= $32		; lsb of current music position
-song_pos	= $33		; 
-pattern_pos	= $34		; 
-note_mask	= $35		; temp for music routine
+tempo_counter	= $32
+pattern_row	= $33		; current row 0-31
+pattern_row2	= $34		; pattern row/2
+song_pos	= $35
+note_mask	= $36		; temp for music routine
 LINE_PTR	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 CURSOR_X	= $d3
 CURSOR_Y	= $d6
