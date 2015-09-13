@@ -22,6 +22,7 @@ MUSIC		= 1
 
 ; special levels
 STALKER_LEVEL	= 6
+FINAL_LEVEL	= 18
 
 ; kernal routines
 PRINT_INT	= $ddcd		; print 16-bit integer in X/A (undocumented basic routine)
@@ -49,51 +50,53 @@ CHR_F3		= 134
 CHR_F5		= 135
 CHR_F7		= 136
 CHR_HALF_HEART	= 64
-CHR_WALL	= 65
-CHR_FLOOR	= 66
-CHR_DOOR	= 67
-CHR_SECRET_DOOR	= 68
-CHR_STAIRS	= 69
-CHR_PLAYER	= 70
-CHR_POTION	= 71
-CHR_GEM		= 72
-CHR_SCROLL	= 73
-CHR_SKULL	= 74
-CHR_GOLD	= 75
-CHR_BAT		= 76
-CHR_RAT		= 77
-CHR_WORM	= 78
-CHR_SNAKE	= 79
-CHR_ORC		= 80
-CHR_UNDEAD	= 81
-CHR_STALKER	= 82
-CHR_SLIME	= 83
-CHR_WIZARD	= 84
-CHR_DEMON	= 85
+CHR_ANKH	= 65
+CHR_WALL	= 66
+CHR_FLOOR	= 67
+CHR_DOOR	= 68
+CHR_SECRET_DOOR	= 69
+CHR_STAIRS	= 70
+CHR_PLAYER	= 71
+CHR_POTION	= 72
+CHR_GEM		= 73
+CHR_SCROLL	= 74
+CHR_SKULL	= 75
+CHR_GOLD	= 76
+CHR_BAT		= 77
+CHR_RAT		= 78
+CHR_WORM	= 79
+CHR_SNAKE	= 80
+CHR_ORC		= 81
+CHR_UNDEAD	= 82
+CHR_STALKER	= 83
+CHR_SLIME	= 84
+CHR_WIZARD	= 85
+CHR_DEMON	= 86
 
 ; screen codes
 SCR_HALF_HEART	= 0
-SCR_WALL	= 1
-SCR_FLOOR	= 2
-SCR_DOOR	= 3
-SCR_SECRET_DOOR	= 4
-SCR_STAIRS	= 5
-SCR_PLAYER	= 6
-SCR_POTION	= 7
-SCR_GEM		= 8
-SCR_SCROLL	= 9
-SCR_SKULL	= 10
-SCR_GOLD	= 11
-SCR_BAT		= 12
-SCR_RAT		= 13
-SCR_WORM	= 14
-SCR_SNAKE	= 15
-SCR_ORC		= 16
-SCR_UNDEAD	= 17
-SCR_STALKER	= 18
-SCR_SLIME	= 19
-SCR_WIZARD	= 20
-SCR_DEMON	= 21
+SCR_ANKH	= 1
+SCR_WALL	= 2
+SCR_FLOOR	= 3
+SCR_DOOR	= 4
+SCR_SECRET_DOOR	= 5
+SCR_STAIRS	= 6
+SCR_PLAYER	= 7
+SCR_POTION	= 8
+SCR_GEM		= 9
+SCR_SCROLL	= 10
+SCR_SKULL	= 11
+SCR_GOLD	= 12
+SCR_BAT		= 13
+SCR_RAT		= 14
+SCR_WORM	= 15
+SCR_SNAKE	= 16
+SCR_ORC		= 17
+SCR_UNDEAD	= 18
+SCR_STALKER	= 19
+SCR_SLIME	= 20
+SCR_WIZARD	= 21
+SCR_DEMON	= 22
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
 SCR_DAMAGE	= 42 + $80
@@ -126,7 +129,7 @@ dungeon_level	= $b
 gold		= $c
 turn		= $d
 score		= $e		; $e-$f = 16-bit score
-;		= $10
+demons_killed	= $10
 ;		= $11
 rndloc_tmp	= $12
 color_ptr	= $13		; $13-$14 = pointer to current line in color ram
@@ -136,18 +139,19 @@ mon_x		= $20		; current monster position
 mon_y		= $21
 mon_color	= $23
 random_seed	= $24		; TODO: initialize seed from raster pos or jiffy clock
-delay_tmp	= $25		; temp for delay routine
-reveal_x	= $26		; reveal area vars
-reveal_y 	= $27
-reveal_dx	= $28
-reveal_dy 	= $29
-reveal_tmp	= $30
-damage_char	= $31		; temp for damage flash
-tempo_counter	= $32
-pattern_row	= $33		; current row 0-31
-pattern_row2	= $34		; pattern row/2
-song_pos	= $35
-note_mask	= $36		; temp for music routine
+delay_length	= $25
+delay_tmp	= $26		; temp for delay routine
+reveal_x	= $27		; reveal area vars
+reveal_y 	= $28
+reveal_dx	= $29
+reveal_dy 	= $30
+reveal_tmp	= $31
+damage_char	= $32		; temp for damage flash
+tempo_counter	= $33
+pattern_row	= $34		; current row 0-31
+pattern_row2	= $35		; pattern row/2
+song_pos	= $36
+note_mask	= $37		; temp for music routine
 line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 cursor_x	= $d3
 cursor_y	= $d6
@@ -225,6 +229,8 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	lda #INITIAL_HP
 	sta hp
 	sta max_hp
+	lda #MSG_DELAY
+	sta delay_length
 
 	jsr update_hp
 	.if MUSIC
@@ -874,7 +880,7 @@ delay:	lda $a2
 @loop:	sec
 	lda $a2
 	sbc delay_tmp
-	cmp #MSG_DELAY
+	cmp delay_length
 	bcc @loop
 	rts
 
@@ -968,6 +974,7 @@ usepot:	.byte "HEALED!",0
 usegem:	.byte "A VISION!",0
 usescr:	.byte "TURNED INVISIBLE!",0
 useskul:.byte "CHAOS!",0
+youwin:	.byte "YOU WIN! SCORE:",0
 
 	; initial contents of status bar area in screen ram and color ram
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_SKULL,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
@@ -1011,6 +1018,7 @@ _nameof:.byte _potion-names
 
 	; user defined chars
 charset:.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
+ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08	; (ankh)
 	.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
 	.byte $00,$00,$00,$00,$00,$18,$18,$00	; . floor
 	.byte $ff,$f7,$f7,$c1,$f7,$f7,$ff,$ff	; + door

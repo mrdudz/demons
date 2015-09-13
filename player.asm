@@ -183,11 +183,17 @@ player_attack:
 	ldy cur_name
 	cpy #SCR_DEMON
 	bne @ndemon
+	inc demons_killed
 	lda #SCORE_DEMON
+	; TODO: place stairs!
 @ndemon:jsr add_score
 	ldx #<mondie
 	ldy #>mondie
-@pr:	jmp print_msg			; jsr print_msg + rts
+@pr:	jsr print_msg			; jsr print_msg + rts
+	lda demons_killed		; win game when 3rd demon is killed
+	cmp #3
+	beq wingame
+	rts
 
 @wound: jsr rand8			; 50% chance of killing when monster is wounded
 	cmp #$80
@@ -197,6 +203,49 @@ player_attack:
 	ldx #<monwoun
 	ldy #>monwoun
 	bne @pr	
+
+	;*****************************************************************
+	; win game
+	;*****************************************************************
+
+wingame:; clear screen effect
+	lda #1			; set smaller delay
+	sta delay_length
+	ldx #0
+@clear:	jsr rand8
+	tay
+	lda #SCR_SPACE
+	sta SCREEN+22,y
+	sta SCREEN+228,y
+	jsr delay
+	dex
+	bne @clear
+	; draw ankh
+	ldx #6		; X = row
+@yloop:	ldy #6		; Y = column
+	jsr move	; move cursor to top-left corner on screen
+	lda #$80
+	sta $0
+@xloop:	lda ankh-6,x
+	and $0
+	beq @skip
+	lda #35+$80
+	sta (line_ptr),y
+	lda #COLOR_WHITE
+	sta (color_ptr),y
+@skip:	lda $0
+	lsr
+	sta $0
+	iny
+	cpy #6+8
+	bne @xloop
+	inx
+	cpx #6+8
+	bne @yloop
+	; you win
+	ldx #<youwin
+	ldy #>youwin
+	bne gameover	; always branches
 
 	;*****************************************************************
 	; player damage
@@ -212,8 +261,11 @@ player_damage:
 player_die:
 	ldx #<youdie
 	ldy #>youdie
+gameover:
 	jsr print_msg
 	; print score
+	lda #COLOR_YELLOW
+	sta cur_color
 	ldx #0
 	ldy #16
 	jsr move
