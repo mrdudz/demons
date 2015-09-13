@@ -13,12 +13,13 @@ PLAYER_ACCURACY	= 140
 ENEMY_ACCURACY	= 80
 LOOT_DROP	= 30
 INVISIBLE_TIME	= 45
+DEMON_HP	= 3
 SCORE_MONSTER	= 1
 SCORE_GOLD	= 10
 SCORE_DEMON	= 100
 MSG_DELAY	= 25		; message delay length in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
-MUSIC		= 1
+MUSIC		= 0
 
 ; special levels
 STALKER_LEVEL	= 6
@@ -130,7 +131,7 @@ gold		= $c
 turn		= $d
 score		= $e		; $e-$f = 16-bit score
 demons_killed	= $10
-;		= $11
+demon_hp	= $11
 rndloc_tmp	= $12
 color_ptr	= $13		; $13-$14 = pointer to current line in color ram
 cur_name	= $15		; current monster/item index for print
@@ -393,6 +394,9 @@ random_level:
 	bne @floop
 	jsr init_player
 	.endif
+
+	lda #DEMON_HP	; init demon hp
+	sta demon_hp
 
 	jmp reveal	; jsr reveal + rts
 
@@ -699,6 +703,9 @@ move:	pha		; store A,X,Y
 
 plot:	jsr move
 	jsr CHROUT
+	;sta (line_ptr),y
+	;lda cur_color
+	;sta (color_ptr),y
 	rts
 
 	;*****************************************************************
@@ -1072,4 +1079,4 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_WHITE			;   stalker
 	.byte COLOR_GREEN			; S slime
 	.byte COLOR_PURPLE			; @ wizard
-	.byte COLOR_YELLOW			; D demon
+	.byte COLOR_PURPLE			; D demon

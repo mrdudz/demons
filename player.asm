@@ -161,6 +161,12 @@ player_attack:
 	and #7
 	cmp #COLOR_RED
 	bne @wound			; monster wounded
+	lda cur_name
+	cmp #SCR_DEMON
+	bne @killit
+	dec demon_hp			; dec demon hp
+	lda demon_hp
+	bne @done
 	; remove enemy
 @killit:lda #COLOR_EXPLORED
 	sta cur_color
@@ -183,7 +189,6 @@ player_attack:
 	ldy cur_name
 	cpy #SCR_DEMON
 	bne @ndemon
-	; demon was killed
 	inc demons_killed
 	lda dungeon_level		; no stairs on 18th level
 	cmp #18
@@ -202,7 +207,7 @@ player_attack:
 	lda demons_killed		; win game when 3rd demon is killed
 	cmp #3
 	beq wingame
-	rts
+@done:	rts
 
 @wound: jsr rand8			; 50% chance of killing when monster is wounded
 	cmp #$80

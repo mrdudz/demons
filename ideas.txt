@@ -6,6 +6,7 @@ A roguelike for the unexpanded VIC-20
 Optimization:
 - try to remove end of line and end of basic program zero bytes (would save 2 bytes)
 - remove charset initialization code by placing char data at $1c00 in the prg file
+- push characters to start at $1cxx address to free up memory
 
 Plot:
 Player is a druid. To become a grandmaster of his circle, he must defeat three demons in Dungeon Dex.
