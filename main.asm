@@ -133,6 +133,7 @@ pattern_row2	= $27		; pattern row/2
 song_pos	= $28
 note_mask	= $29		; temp for music routine
 mute_music	= $2a
+text_color	= $2b		; text color for print
 line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 cursor_x	= $d3
 cursor_y	= $d6
@@ -183,22 +184,6 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	lda #$ff			; set character base to $1c00
 	sta $9005
 
-	; init charset
-	ldx #0
-@copy:  lda charset,x
-	sta $1d48,x
-	inx
-	cpx #charset_end-charset
-	bne @copy
-
-	lda #CHR_CLR_HOME		; clear screen
-	jsr CHROUT
-
-	; draw welcome message
-	ldx #<welcome
-	ldy #>welcome
-	jsr print_msg
-
 	; init zero page vars to zero
 	ldx #$50
 	lda #0
@@ -206,6 +191,44 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	dex
 	bpl @zp
 
+	lda #CHR_CLR_HOME		; clear screen
+	jsr CHROUT
+	jsr clearscreen
+
+	.if MUSIC
+	jsr init_music
+	.endif
+
+	; title screen
+@tloop:	jsr rand8		; random text color
+	and #1
+	tax
+	lda titlec,x
+	sta text_color
+	ldy #0
+	ldx #6
+	stx delay_length
+	jsr move
+	ldx #0
+	ldy #3			; x offset
+	jsr print_title
+	; code
+	lda #COLOR_YELLOW
+	sta text_color
+	inx
+	ldy #1+22*4		; x offset
+	jsr print_title
+	; music
+	inx
+	ldy #1+22*6		; x offset
+	jsr print_title
+	jsr delay
+	jsr GETIN
+	cmp #0
+	bne @newgame
+	jmp @tloop
+
+@newgame:
 	; init status bar
 	ldx #21
 @stat:	lda statscr,x
@@ -225,10 +248,6 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	sta delay_length
 
 	jsr update_hp
-	.if MUSIC
-	jsr init_music
-	.endif
-
 	jsr random_level
 
 	; dump charset
@@ -701,21 +720,21 @@ plot2:	sta (line_ptr),y
 	rts
 
 	;*****************************************************************
-	; prints text at cursor using kernal
-	; X,Y = address of text
+	; prints text at cursor
+	; X = text offset
+	; Y = dest offset
 	;*****************************************************************
 
-	.if 0
-print:	stx $0
-	sty $1
-	ldy #0
-@loop:	lda ($0),y
+print_title:
+	lda title,x
 	beq @done
-	jsr CHROUT
+	inx
+	sta (line_ptr),y
+	lda text_color
+	sta (color_ptr),y
 	iny
-	bne @loop	; always branches
+	bne print_title
 @done:	rts
-	.endif
 
 	;*****************************************************************
 	; prints 8-bit hex number at cursor, in: A
@@ -972,7 +991,10 @@ add_score:
 	; data
 	;*****************************************************************
 
-welcome:.byte "DEMONS OF DEX",0
+	; text
+title:	.byte SCR_ANKH,$20,$84,$85,$8d,$8f,$8e,$93,$a0,$8f,$86,$a0,$84,$85,$98,$20,SCR_ANKH,$00	; DEMONS OF DEX
+creds1: .byte $83,$8f,$84,$85,$ba,$a0,$a0,$90,$85,$94,$92,$89,$a0,$88,$81,$8b,$8b,$89,$8e,$85,$8e,$00
+creds2: .byte $8d,$95,$93,$89,$83,$ba,$a0,$8d,$89,$8b,$8b,$8f,$a0,$8b,$81,$8c,$8c,$89,$8e,$85,$8e,$00
 descend:.byte "DESCENDING",0
 youhit:	.byte "YOU HIT THE %!",0
 youmiss:.byte "YOU MISS.",0
@@ -993,6 +1015,8 @@ usescr:	.byte "TURNED INVISIBLE!",0
 useskul:.byte "CHAOS!",0
 youwin:	.byte "YOU WIN! SCORE:",0
 levelup:.byte "LEVEL UP!",0
+
+titlec:	.byte COLOR_RED,COLOR_YELLOW	; title colors
 
 	; initial contents of status bar area in screen ram and color ram
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_SKULL,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
@@ -1034,6 +1058,31 @@ _nameof:.byte _potion-names
 	.byte _wizard-names
 	.byte _demon-names
 
+colors = _colors-SCR_WALL
+_colors:.byte COLOR_CYAN			; # wall
+	.byte COLOR_CYAN			; . floor
+	.byte COLOR_CYAN			; + door
+	.byte COLOR_CYAN			; (secret door)
+	.byte COLOR_WHITE			; > stairs
+plcolor:.byte COLOR_WHITE			; @ player
+	.byte COLOR_RED				; ! potion
+	.byte COLOR_GREEN			; (gem)
+	.byte COLOR_PURPLE			; ? scroll
+	.byte COLOR_YELLOW			; & skull
+	.byte COLOR_YELLOW			; $ gold
+	.byte COLOR_RED				; b bat
+	.byte COLOR_RED				; r rat
+	.byte COLOR_WHITE			; w worm
+	.byte COLOR_GREEN			; s snake
+	.byte COLOR_GREEN			; o orc
+	.byte COLOR_WHITE			; z undead
+	.byte COLOR_WHITE			;   stalker
+	.byte COLOR_GREEN			; S slime
+	.byte COLOR_PURPLE			; @ wizard
+	.byte COLOR_PURPLE			; D demon
+
+	.segment "CHARS"
+
 	; user defined chars
 charset:.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
 ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08	; (ankh)
@@ -1059,26 +1108,3 @@ ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08	; (ankh)
 	.byte $1c,$22,$4a,$56,$4c,$20,$1e,$00	; @ wizard
 	.byte $78,$24,$22,$22,$22,$24,$78,$00	; D demon
 charset_end:
-
-colors = _colors-SCR_WALL
-_colors:.byte COLOR_CYAN			; # wall
-	.byte COLOR_CYAN			; . floor
-	.byte COLOR_CYAN			; + door
-	.byte COLOR_CYAN			; (secret door)
-	.byte COLOR_WHITE			; > stairs
-plcolor:.byte COLOR_WHITE			; @ player
-	.byte COLOR_RED				; ! potion
-	.byte COLOR_GREEN			; (gem)
-	.byte COLOR_PURPLE			; ? scroll
-	.byte COLOR_YELLOW			; & skull
-	.byte COLOR_YELLOW			; $ gold
-	.byte COLOR_RED				; b bat
-	.byte COLOR_RED				; r rat
-	.byte COLOR_WHITE			; w worm
-	.byte COLOR_GREEN			; s snake
-	.byte COLOR_GREEN			; o orc
-	.byte COLOR_WHITE			; z undead
-	.byte COLOR_WHITE			;   stalker
-	.byte COLOR_GREEN			; S slime
-	.byte COLOR_PURPLE			; @ wizard
-	.byte COLOR_PURPLE			; D demon
