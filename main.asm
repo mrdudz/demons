@@ -19,7 +19,7 @@ SCORE_GOLD	= 10
 SCORE_DEMON	= 100
 MSG_DELAY	= 25		; message delay length in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
-MUSIC		= 0
+MUSIC		= 1
 
 ; special levels
 STALKER_LEVEL	= 6
@@ -52,29 +52,29 @@ CHR_F5		= 135
 CHR_F7		= 136
 
 ; screen codes
-SCR_HALF_HEART	= 0
-SCR_ANKH	= 1
-SCR_WALL	= 2
-SCR_FLOOR	= 3
-SCR_DOOR	= 4
-SCR_SECRET_DOOR	= 5
-SCR_STAIRS	= 6
-SCR_PLAYER	= 7
-SCR_POTION	= 8
-SCR_GEM		= 9
-SCR_SCROLL	= 10
-SCR_SKULL	= 11
-SCR_GOLD	= 12
-SCR_BAT		= 13
-SCR_RAT		= 14
-SCR_WORM	= 15
-SCR_SNAKE	= 16
-SCR_ORC		= 17
-SCR_UNDEAD	= 18
-SCR_STALKER	= 19
-SCR_SLIME	= 20
-SCR_WIZARD	= 21
-SCR_DEMON	= 22
+SCR_HALF_HEART	= 0 + 41
+SCR_ANKH	= 1 + 41
+SCR_WALL	= 2 + 41
+SCR_FLOOR	= 3 + 41
+SCR_DOOR	= 4 + 41
+SCR_SECRET_DOOR	= 5 + 41
+SCR_STAIRS	= 6 + 41
+SCR_PLAYER	= 7 + 41
+SCR_POTION	= 8 + 41
+SCR_GEM		= 9 + 41
+SCR_SCROLL	= 10 + 41
+SCR_SKULL	= 11 + 41
+SCR_GOLD	= 12 + 41
+SCR_BAT		= 13 + 41
+SCR_RAT		= 14 + 41
+SCR_WORM	= 15 + 41
+SCR_SNAKE	= 16 + 41
+SCR_ORC		= 17 + 41
+SCR_UNDEAD	= 18 + 41
+SCR_STALKER	= 19 + 41
+SCR_SLIME	= 20 + 41
+SCR_WIZARD	= 21 + 41
+SCR_DEMON	= 22 + 41
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
 SCR_DAMAGE	= 42 + $80
@@ -180,13 +180,18 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	; init charset
 	ldx #0
 @copy:  lda charset,x
-	sta $1c00,x
+	sta $1d48,x
 	inx
 	cpx #charset_end-charset
 	bne @copy
 
 	lda #CHR_CLR_HOME		; clear screen
 	jsr CHROUT
+
+	; draw welcome message
+	ldx #<welcome
+	ldy #>welcome
+	jsr print_msg
 
 	; init zero page vars to zero
 	ldx #$50
@@ -217,12 +222,8 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	.if MUSIC
 	jsr init_music
 	.endif
-	jsr random_level
 
-	; draw welcome message
-	ldx #<welcome
-	ldy #>welcome
-	jsr print_msg
+	jsr random_level
 
 	; dump charset
 	.if 0
@@ -750,20 +751,22 @@ print_msg2:
 	sta msg_time
 	stx print_tmp
 	sty print_tmp+1
-	ldx #0		; X = screen pos
-	ldy #0		; Y = text pos 
+	ldx #0			; X = screen pos
+	ldy #0			; Y = text pos 
 @loop1: lda (print_tmp),y
 	beq @chk
 	iny
 	cmp #'%'
 	beq @print_name
-	and #$ff-64	; char to screen code
-	ora #$80	; rebase screen codes to start from 128
+	and #$ff-64		; char to screen code
+	ora #$80		; rebase screen codes to start from 128
 	sta SCREEN,x
+	lda #COLOR_WHITE
+	sta COLOR_RAM,x
 	inx
 	bne @loop1
 	; clear rest of the line
-@loop2:	lda #32
+@loop2:	lda #32+$80
 	sta SCREEN,x
 	inx
 @chk:	cpx #22

@@ -110,7 +110,9 @@ move_enemy:
 	; check obstacles
 	lda @dirs,x		; move cursor to target cell
 	jsr CHROUT
+	ldx cursor_y
 	ldy cursor_x
+	jsr move
 	lda (line_ptr),y
 	cmp #SCR_PLAYER
 	beq enemy_attack
@@ -121,11 +123,10 @@ move_enemy:
 	cmp #COLOR_UNSEEN
 	beq @block		; can't move to unseen cells
 	; draw monster to new cell
-	lda mon_color
-	sta cur_color
 	lda cur_name
-	ora #64			; scr code -> char code
-	jsr CHROUT
+	sta (line_ptr),y
+	lda mon_color
+	sta (color_ptr),y
 	; clear monster from old cell
 	ldx mon_y
 	ldy mon_x
