@@ -48,7 +48,7 @@ update_player:
 @down:	inx
 	bne @move		; always branches
 @left:	dey
-	bne @move		; always branches
+	jmp @move		; can't use bne here, in case player is on left edge of map
 @right:	iny
 
 @move:	; X,Y = move target
@@ -183,9 +183,18 @@ player_attack:
 	ldy cur_name
 	cpy #SCR_DEMON
 	bne @ndemon
+	; demon was killed
 	inc demons_killed
-	lda #SCORE_DEMON
-	; TODO: place stairs!
+	lda dungeon_level		; no stairs on 18th level
+	cmp #18
+	beq @nstair			
+	ldy mon_x			; place stairs
+	jsr move
+	lda #SCR_STAIRS
+	sta (line_ptr),y
+	lda #COLOR_WHITE
+	sta (color_ptr),y
+@nstair:lda #SCORE_DEMON
 @ndemon:jsr add_score
 	ldx #<mondie
 	ldy #>mondie

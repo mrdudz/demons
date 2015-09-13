@@ -20,15 +20,7 @@ init_enemies:
 	jsr CHROUT
 @skip:	dec $0
 	bne @loop
-	; place special level creatures
-	lda dungeon_level
-	cmp #FINAL_LEVEL
-	bne @done
-	jsr randomloc
-	jsr move
-	lda #CHR_DEMON
-	jsr CHROUT
-@done:	rts
+	rts
 
 	;*****************************************************************
 	; update enemies

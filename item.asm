@@ -128,6 +128,7 @@ use_skull:
 	ldx #<useskul
 	ldy #>useskul
 	jsr print_msg
+	; shake effect
 	lda vic_scr_center	
 	sta $0			; $0 = old screen center value
 	ldx #0
@@ -164,6 +165,8 @@ use_skull:
 	sta cur_name
 	cmp #SCR_BAT
 	bmi @skip		; skip non-monster cells
+	cmp #SCR_DEMON
+	beq @skip		; demons are immune to skulls
 	lda (color_ptr),y
 	and #7
 	cmp #COLOR_UNSEEN

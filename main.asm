@@ -402,9 +402,18 @@ random_level:
 
 init_stairs:
 	jsr randomloc
+	; replace stairs with demon on special levels
+	lda dungeon_level
+	cmp #6
+	beq @demon
+	cmp #12
+	beq @demon
+	cmp #18
+	beq @demon
 	lda #CHR_STAIRS
-	jsr plot
-	rts
+	bne @plot		; always branches
+@demon:	lda #CHR_DEMON
+@plot:	jmp plot		; jmp + rts
 
 	;*****************************************************************
 	; initialize doors
@@ -1060,7 +1069,7 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_GREEN			; s snake
 	.byte COLOR_GREEN			; o orc
 	.byte COLOR_WHITE			; z undead
-	.byte COLOR_BLACK			;   stalker
+	.byte COLOR_WHITE			;   stalker
 	.byte COLOR_GREEN			; S slime
 	.byte COLOR_PURPLE			; @ wizard
 	.byte COLOR_YELLOW			; D demon
