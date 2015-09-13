@@ -29,7 +29,7 @@ random_loot:
 	ldy cursor_x
 	jmp plot2		; jsr + rts
 
-@items: .byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_SKULL,SCR_GOLD
+@items: .byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_ANKH,SCR_GOLD
 
 	;*****************************************************************
 	; use potion

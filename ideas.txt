@@ -3,6 +3,9 @@ A roguelike for the unexpanded VIC-20
 
 *** SPOILERS AHEAD!! DON'T READ IF YOU ARE GOING TO PLAY THIS GAME ***
 
+BUGS:
+- when player is invisible and attacks a monster, the player icon stays blue
+
 Optimization:
 - try to remove end of line and end of basic program zero bytes (would save 2 bytes)
 - remove charset initialization code by placing char data at $1c00 in the prg file

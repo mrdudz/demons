@@ -52,29 +52,28 @@ CHR_F5		= 135
 CHR_F7		= 136
 
 ; screen codes
-SCR_HALF_HEART	= 0 + 41
-SCR_ANKH	= 1 + 41
-SCR_WALL	= 2 + 41
-SCR_FLOOR	= 3 + 41
-SCR_DOOR	= 4 + 41
-SCR_SECRET_DOOR	= 5 + 41
-SCR_STAIRS	= 6 + 41
-SCR_PLAYER	= 7 + 41
-SCR_POTION	= 8 + 41
-SCR_GEM		= 9 + 41
-SCR_SCROLL	= 10 + 41
-SCR_SKULL	= 11 + 41
-SCR_GOLD	= 12 + 41
-SCR_BAT		= 13 + 41
-SCR_RAT		= 14 + 41
-SCR_WORM	= 15 + 41
-SCR_SNAKE	= 16 + 41
-SCR_ORC		= 17 + 41
-SCR_UNDEAD	= 18 + 41
-SCR_STALKER	= 19 + 41
-SCR_SLIME	= 20 + 41
-SCR_WIZARD	= 21 + 41
-SCR_DEMON	= 22 + 41
+SCR_HALF_HEART	= 0 + 42
+SCR_WALL	= 1 + 42
+SCR_FLOOR	= 2 + 42
+SCR_DOOR	= 3 + 42
+SCR_SECRET_DOOR	= 4 + 42
+SCR_STAIRS	= 5 + 42
+SCR_PLAYER	= 6 + 42
+SCR_POTION	= 7 + 42
+SCR_GEM		= 8 + 42
+SCR_SCROLL	= 9 + 42
+SCR_ANKH	= 10 + 42
+SCR_GOLD	= 11 + 42
+SCR_BAT		= 12 + 42
+SCR_RAT		= 13 + 42
+SCR_WORM	= 14 + 42
+SCR_SNAKE	= 15 + 42
+SCR_ORC		= 16 + 42
+SCR_UNDEAD	= 17 + 42
+SCR_STALKER	= 18 + 42
+SCR_SLIME	= 19 + 42
+SCR_WIZARD	= 20 + 42
+SCR_DEMON	= 21 + 42
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
 SCR_DAMAGE	= 42 + $80
@@ -216,11 +215,11 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	lda #COLOR_YELLOW
 	sta text_color
 	inx
-	ldy #1+22*4		; x offset
+	ldy #1+22*5		; x offset
 	jsr print_title
 	; music
 	inx
-	ldy #1+22*6		; x offset
+	ldy #1+22*7		; x offset
 	jsr print_title
 	jsr delay
 	jsr GETIN
@@ -1012,14 +1011,13 @@ youmiss:.byte "YOU MISS.",0
 youdie: .byte "YOU DIE! SCORE:",0
 monhit: .byte "% HITS YOU!",0
 monmiss:.byte "% MISSES!",0
-mondie:	.byte "THE % IS DEAD!",0
 mondies:.byte "% DIES!",0
 monwoun:.byte "% IS WOUNDED!",0
 opened:	.byte "OPENED.",0
 block:	.byte "BLOCKED.",0
 found:	.byte "FOUND %.",0
 outof:	.byte "NO %S.",0
-useitem:.byte "USING %...",0
+useitem:.byte "USE %",0
 usepot:	.byte "HEALED!",0
 usegem:	.byte "A VISION!",0
 usescr:	.byte "TURNED INVISIBLE!",0
@@ -1030,7 +1028,7 @@ levelup:.byte "LEVEL UP!",0
 titlec:	.byte COLOR_RED,COLOR_YELLOW	; title colors
 
 	; initial contents of status bar area in screen ram and color ram
-statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_SKULL,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
+statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_ANKH,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
 statcol:.byte 2,2,2,2,2,2,2,2,1,1,5,1,1,4,1,1,7,1,1,1,1,1
 
 	; monster and item names
@@ -1038,7 +1036,7 @@ names:
 _potion:.byte "POTION",0
 _gem:	.byte "GEM",0
 _scroll:.byte "SCROLL",0
-_skull:	.byte "SKULL",0
+_ankh:	.byte "ANKH",0
 _gold:	.byte "GOLD",0
 _bat:	.byte "BAT",0
 _rat:	.byte "RAT",0
@@ -1056,7 +1054,7 @@ nameoff = _nameof-SCR_POTION
 _nameof:.byte _potion-names
 	.byte _gem-names
 	.byte _scroll-names
-	.byte _skull-names
+	.byte _ankh-names
 	.byte _gold-names
 	.byte _bat-names
 	.byte _rat-names
@@ -1079,7 +1077,7 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_RED				; ! potion
 	.byte COLOR_GREEN			; (gem)
 	.byte COLOR_PURPLE			; ? scroll
-	.byte COLOR_YELLOW			; & skull
+	.byte COLOR_YELLOW			; (ankh)
 	.byte COLOR_YELLOW			; $ gold
 	.byte COLOR_RED				; b bat
 	.byte COLOR_RED				; r rat
@@ -1096,7 +1094,6 @@ plcolor:.byte COLOR_WHITE			; @ player
 
 	; user defined chars
 charset:.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
-ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08	; (ankh)
 	.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
 	.byte $00,$00,$00,$00,$00,$18,$18,$00	; . floor
 	.byte $ff,$f7,$f7,$c1,$f7,$f7,$ff,$ff	; + door
@@ -1106,7 +1103,7 @@ ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08	; (ankh)
 	.byte $08,$08,$08,$08,$00,$00,$08,$00	; ! potion
 	.byte $08,$1c,$3e,$7f,$3e,$1c,$08,$00	; (gem)
 	.byte $3c,$42,$02,$0c,$10,$00,$10,$00	; ? scroll
-	.byte $30,$48,$48,$30,$4a,$44,$3a,$00	; & skull
+ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08	; (ankh)
 	.byte $08,$1e,$28,$1c,$0a,$3c,$08,$00	; $ gold
 	.byte $40,$40,$5c,$62,$42,$62,$5c,$00	; b bat
 	.byte $00,$00,$5c,$62,$40,$40,$40,$00	; r rat

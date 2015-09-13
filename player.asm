@@ -209,8 +209,8 @@ player_attack:
 	sta (color_ptr),y
 @nstair:lda #SCORE_DEMON
 @ndemon:jsr add_score
-	ldx #<mondie
-	ldy #>mondie
+	ldx #<mondies
+	ldy #>mondies
 	inc player_xp			; add xp
 @pr:	jsr print_msg
 	; win game when 3rd demon is killed
