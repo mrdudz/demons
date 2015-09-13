@@ -150,7 +150,7 @@ player_attack:
 	ldx mon_y			; restore X,Y
 	ldy mon_x
 	jmp miss_flash			; jsr miss_flash + rts
-	;rts
+@done2:	rts
 
 @wound: lda #COLOR_RED
 	sta (color_ptr),y
@@ -176,7 +176,7 @@ player_attack:
 	bne @killit
 	dec demon_hp			; dec demon hp
 	lda demon_hp
-	bne @done
+	bne @done2
 	; remove enemy
 @killit:lda #COLOR_EXPLORED
 	sta cur_color
@@ -235,6 +235,20 @@ player_attack:
 @nohp:	ldx #<levelup
 	ldy #>levelup
 	jsr print_msg
+	; level up effect
+	ldx #7
+	stx delay_length
+@floop: txa
+	ldy #8
+@floop2:sta COLOR_RAM,y
+	dey
+	bpl @floop2
+	jsr delay
+	dex
+	bne @floop
+	lda #MSG_DELAY
+	sta delay_length
+	;
 	inc player_level
 	lda #0
 	sta player_xp
