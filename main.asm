@@ -125,34 +125,36 @@ px		= $6		; player
 py		= $7
 hp		= $8
 max_hp		= $9
-invisibility	= $a
-dungeon_level	= $b
-gold		= $c
-turn		= $d
-score		= $e		; $e-$f = 16-bit score
-demons_killed	= $10
-demon_hp	= $11
-rndloc_tmp	= $12
-color_ptr	= $13		; $13-$14 = pointer to current line in color ram
-cur_name	= $15		; current monster/item index for print
-msg_time	= $1f		; last time print message was called
-mon_x		= $20		; current monster position
-mon_y		= $21
-mon_color	= $23
-random_seed	= $24		; TODO: initialize seed from raster pos or jiffy clock
-delay_length	= $25
-delay_tmp	= $26		; temp for delay routine
-reveal_x	= $27		; reveal area vars
-reveal_y 	= $28
-reveal_dx	= $29
-reveal_dy 	= $30
-reveal_tmp	= $31
-damage_char	= $32		; temp for damage flash
-tempo_counter	= $33
-pattern_row	= $34		; current row 0-31
-pattern_row2	= $35		; pattern row/2
-song_pos	= $36
-note_mask	= $37		; temp for music routine
+player_level	= $a
+player_xp	= $b
+invisibility	= $c
+dungeon_level	= $d
+gold		= $e
+turn		= $f
+score		= $10		; $10-$11 = 16-bit score
+demons_killed	= $12
+demon_hp	= $13
+rndloc_tmp	= $14
+color_ptr	= $15		; $15-$16 = pointer to current line in color ram
+cur_name	= $17		; current monster/item index for print
+msg_time	= $18		; last time print message was called
+mon_x		= $19		; current monster position
+mon_y		= $1a
+mon_color	= $1b
+random_seed	= $1c		; TODO: initialize seed from raster pos or jiffy clock
+delay_length	= $1d
+delay_tmp	= $1e		; temp for delay routine
+reveal_x	= $1f		; reveal area vars
+reveal_y 	= $20
+reveal_dx	= $21
+reveal_dy 	= $22
+reveal_tmp	= $23
+damage_char	= $24		; temp for damage flash
+tempo_counter	= $25
+pattern_row	= $26		; current row 0-31
+pattern_row2	= $27		; pattern row/2
+song_pos	= $28
+note_mask	= $29		; temp for music routine
 line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 cursor_x	= $d3
 cursor_y	= $d6
@@ -226,6 +228,7 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	bpl @stat
 
 	; init game vars
+	inc player_level
 	inc dungeon_level
 	lda #INITIAL_HP
 	sta hp
@@ -406,7 +409,11 @@ random_level:
 
 init_stairs:
 	jsr randomloc
-	; replace stairs with demon on special levels
+	cpy #8			; check that stairs are not too near
+	bmi @ok
+	cpy #14
+	bmi init_stairs
+@ok:	; replace stairs with demon on special levels
 	lda dungeon_level
 	cmp #6
 	beq @demon
@@ -991,6 +998,7 @@ usegem:	.byte "A VISION!",0
 usescr:	.byte "TURNED INVISIBLE!",0
 useskul:.byte "CHAOS!",0
 youwin:	.byte "YOU WIN! SCORE:",0
+levelup:.byte "LEVEL UP!",0
 
 	; initial contents of status bar area in screen ram and color ram
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_SKULL,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE

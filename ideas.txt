@@ -7,12 +7,13 @@ Optimization:
 - try to remove end of line and end of basic program zero bytes (would save 2 bytes)
 - remove charset initialization code by placing char data at $1c00 in the prg file
 - push characters to start at $1cxx address to free up memory
+- check that init stairs does not get stuck in infinite loop
+- check that game works on expanded vic and NTSC/PAL too
 
 Plot:
 Player is a druid. To become a grandmaster of his circle, he must defeat three demons in Dungeon Dex.
 
 TODO:
-- fix player/stairs placement so that stairs are always at least X cells away
 - RNG is terrible, same levels can repeat during a play session (only 256 different levels)
 	-- $E094: Perform RND. To get RND(1) functionality, enter at $E0BB. It will leave its value in (FAC). 
 

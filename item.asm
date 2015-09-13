@@ -28,7 +28,7 @@ random_loot:
 	lda @items,y
 	jmp CHROUT		; jsr CHROUT + rts
 
-@items: .byte CHR_POTION,CHR_POTION,CHR_POTION,CHR_GOLD,CHR_GEM,CHR_SCROLL,CHR_SKULL,CHR_GOLD
+@items: .byte CHR_POTION,CHR_POTION,CHR_GOLD,CHR_GOLD,CHR_GEM,CHR_SCROLL,CHR_SKULL,CHR_GOLD
 
 	;*****************************************************************
 	; use potion

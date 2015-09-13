@@ -151,17 +151,27 @@ player_attack:
 	ldy mon_x
 	jmp miss_flash			; jsr miss_flash + rts
 	;rts
+
+@wound: lda #COLOR_RED
+	sta (color_ptr),y
+	ldx #<monwoun
+	ldy #>monwoun
+	bne @pr	
+
  @hit:	ldx #<youhit
 	ldy #>youhit
 	jsr print_msg
 	ldx mon_y			; restore X,Y
 	ldy mon_x
 	jsr damage_flash
+	jsr rand8			; 50% chance of skipping wounded state
+	cmp #$80
+	bpl @nwound
 	lda (color_ptr),y
 	and #7
 	cmp #COLOR_RED
 	bne @wound			; monster wounded
-	lda cur_name
+@nwound:lda cur_name
 	cmp #SCR_DEMON
 	bne @killit
 	dec demon_hp			; dec demon hp
@@ -203,20 +213,35 @@ player_attack:
 @ndemon:jsr add_score
 	ldx #<mondie
 	ldy #>mondie
-@pr:	jsr print_msg			; jsr print_msg + rts
-	lda demons_killed		; win game when 3rd demon is killed
+	inc player_xp			; add xp
+@pr:	jsr print_msg
+	; win game when 3rd demon is killed
+	lda demons_killed
 	cmp #3
 	beq wingame
+	; check level up
+	lda player_level
+	asl
+	asl
+	asl				; required xp level * 8
+	cmp player_xp
+	bpl @done
+	; level up
+	lda player_level
+	lsr
+	bcs @nohp			; +2 hp every second level
+	inc max_hp			
+	inc max_hp
+@nohp:	ldx #<levelup
+	ldy #>levelup
+	jsr print_msg
+	inc player_level
+	lda #0
+	sta player_xp
+	lda max_hp
+	sta hp
+	jsr update_hp
 @done:	rts
-
-@wound: jsr rand8			; 50% chance of killing when monster is wounded
-	cmp #$80
-	bpl @killit
-	lda #COLOR_RED
-	sta (color_ptr),y
-	ldx #<monwoun
-	ldy #>monwoun
-	bne @pr	
 
 	;*****************************************************************
 	; win game
