@@ -11,7 +11,7 @@ COLOR_RAM	= $9600
 INITIAL_HP	= 6
 PLAYER_ACCURACY	= 140
 ENEMY_ACCURACY	= 80
-LOOT_DROP	= 30
+LOOT_DROP	= 40
 INVISIBLE_TIME	= 45
 DEMON_HP	= 3
 SCORE_MONSTER	= 1
@@ -50,29 +50,6 @@ CHR_F1		= 133
 CHR_F3		= 134
 CHR_F5		= 135
 CHR_F7		= 136
-CHR_HALF_HEART	= 64
-CHR_ANKH	= 65
-CHR_WALL	= 66
-CHR_FLOOR	= 67
-CHR_DOOR	= 68
-CHR_SECRET_DOOR	= 69
-CHR_STAIRS	= 70
-CHR_PLAYER	= 71
-CHR_POTION	= 72
-CHR_GEM		= 73
-CHR_SCROLL	= 74
-CHR_SKULL	= 75
-CHR_GOLD	= 76
-CHR_BAT		= 77
-CHR_RAT		= 78
-CHR_WORM	= 79
-CHR_SNAKE	= 80
-CHR_ORC		= 81
-CHR_UNDEAD	= 82
-CHR_STALKER	= 83
-CHR_SLIME	= 84
-CHR_WIZARD	= 85
-CHR_DEMON	= 86
 
 ; screen codes
 SCR_HALF_HEART	= 0
@@ -322,7 +299,7 @@ random_level:
 	bcc @turn
 
 	; plot
-@loop:	lda #CHR_FLOOR
+@loop:	lda #SCR_FLOOR
 	jsr plot
 
 	;jsr delay
@@ -421,9 +398,9 @@ init_stairs:
 	beq @demon
 	cmp #18
 	beq @demon
-	lda #CHR_STAIRS
+	lda #SCR_STAIRS
 	bne @plot		; always branches
-@demon:	lda #CHR_DEMON
+@demon:	lda #SCR_DEMON
 @plot:	jmp plot		; jmp + rts
 
 	;*****************************************************************
@@ -450,7 +427,7 @@ init_doors:
 	bne @chk
 	beq @skip		; always branches
 @door:	; choose door type
-	ldy #CHR_DOOR		; place normal door by default
+	ldy #SCR_DOOR		; place normal door by default
 	lda dungeon_level
 	cmp #STALKER_LEVEL
 	beq @sdoor		; all doors are secret on stalker level
@@ -458,9 +435,10 @@ init_doors:
 	jsr rand8		; small chance of placing secret doors after stalker level
 	cmp #0
 	bne @pr
-@sdoor:	ldy #CHR_SECRET_DOOR	; place secret door
+@sdoor:	ldy #SCR_SECRET_DOOR	; place secret door
 @pr:	tya
-	jsr CHROUT
+	ldy cursor_x
+	jsr plot
 @skip:  pla			; restore Y
 	tay	
 	dey
@@ -709,10 +687,9 @@ move:	pha		; store A,X,Y
 	;*****************************************************************
 
 plot:	jsr move
-	jsr CHROUT
-	;sta (line_ptr),y
-	;lda cur_color
-	;sta (color_ptr),y
+plot2:	sta (line_ptr),y
+	lda cur_color
+	sta (color_ptr),y
 	rts
 
 	;*****************************************************************

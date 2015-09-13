@@ -7,7 +7,7 @@ init_player:
 	ldy #11
 	stx py
 	sty px
-	lda #CHR_PLAYER
+	lda #SCR_PLAYER
 	jmp plot	; jsr plot + rts
 
 	;*****************************************************************
@@ -71,11 +71,11 @@ movepl:	sty px			; store new pos
 	stx py
 	lda #COLOR_UNSEEN
 	sta cur_color
-	lda #CHR_PLAYER
+	lda #SCR_PLAYER
 	jsr plot		; draw player at new pos
 	ldx $0			; restore old pos
 	ldy $1
-	lda #CHR_FLOOR		; erase old player
+	lda #SCR_FLOOR		; erase old player
 	jmp plot		; jsr print_msg + rts
 
 blocked:
@@ -86,7 +86,7 @@ blocked:
 open_door:
 	lda #COLOR_UNSEEN
 	sta cur_color
-	lda #CHR_FLOOR
+	lda #SCR_FLOOR
 	jsr plot
 	ldx #<opened
 	ldy #>opened
@@ -180,7 +180,7 @@ player_attack:
 	; remove enemy
 @killit:lda #COLOR_EXPLORED
 	sta cur_color
-	lda #CHR_FLOOR
+	lda #SCR_FLOOR
 	jsr plot
 	; drop loot
 	jsr rand8
@@ -190,7 +190,7 @@ player_attack:
 	ldy mon_x
 	jsr random_loot
 	; set loot color
-	and #$ff-64
+	lda (line_ptr),y
 	tay
 	lda colors,y
 	ldy mon_x

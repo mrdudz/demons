@@ -6,13 +6,13 @@ init_items:
 	jsr rand8
 	and #7
 	sec
-	sbc #4
+	sbc #5
 	bmi @done
 	beq @done
 	sta $0			; $0 = count
 @loop:	jsr randomloc
 	jsr random_loot
-@skip:	dec $0
+	dec $0
 	bne @loop
 @done:	rts
 
@@ -26,9 +26,10 @@ random_loot:
 	and #7
 	tay
 	lda @items,y
-	jmp CHROUT		; jsr CHROUT + rts
+	ldy cursor_x
+	jmp plot2		; jsr + rts
 
-@items: .byte CHR_POTION,CHR_POTION,CHR_GOLD,CHR_GOLD,CHR_GEM,CHR_SCROLL,CHR_SKULL,CHR_GOLD
+@items: .byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_SKULL,SCR_GOLD
 
 	;*****************************************************************
 	; use potion
