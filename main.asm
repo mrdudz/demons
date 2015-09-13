@@ -20,6 +20,9 @@ MSG_DELAY	= 25		; message delay length in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
+; special levels
+STALKER_LEVEL	= 6
+
 ; kernal routines
 PRINT_INT	= $ddcd		; print 16-bit integer in X/A (undocumented basic routine)
 CHROUT		= $ffd2
@@ -49,46 +52,48 @@ CHR_HALF_HEART	= 64
 CHR_WALL	= 65
 CHR_FLOOR	= 66
 CHR_DOOR	= 67
-CHR_STAIRS	= 68
-CHR_PLAYER	= 69
-CHR_POTION	= 70
-CHR_GEM		= 71
-CHR_SCROLL	= 72
-CHR_SKULL	= 73
-CHR_GOLD	= 74
-CHR_BAT		= 75
-CHR_RAT		= 76
-CHR_WORM	= 77
-CHR_SNAKE	= 78
-CHR_ORC		= 79
-CHR_UNDEAD	= 80
-CHR_STALKER	= 81
-CHR_SLIME	= 82
-CHR_WIZARD	= 83
-CHR_DEMON	= 84
+CHR_SECRET_DOOR	= 68
+CHR_STAIRS	= 69
+CHR_PLAYER	= 70
+CHR_POTION	= 71
+CHR_GEM		= 72
+CHR_SCROLL	= 73
+CHR_SKULL	= 74
+CHR_GOLD	= 75
+CHR_BAT		= 76
+CHR_RAT		= 77
+CHR_WORM	= 78
+CHR_SNAKE	= 79
+CHR_ORC		= 80
+CHR_UNDEAD	= 81
+CHR_STALKER	= 82
+CHR_SLIME	= 83
+CHR_WIZARD	= 84
+CHR_DEMON	= 85
 
 ; screen codes
 SCR_HALF_HEART	= 0
 SCR_WALL	= 1
 SCR_FLOOR	= 2
 SCR_DOOR	= 3
-SCR_STAIRS	= 4
-SCR_PLAYER	= 5
-SCR_POTION	= 6
-SCR_GEM		= 7
-SCR_SCROLL	= 8
-SCR_SKULL	= 9
-SCR_GOLD	= 10
-SCR_BAT		= 11
-SCR_RAT		= 12
-SCR_WORM	= 13
-SCR_SNAKE	= 14
-SCR_ORC		= 15
-SCR_UNDEAD	= 16
-SCR_STALKER	= 17
-SCR_SLIME	= 18
-SCR_WIZARD	= 19
-SCR_DEMON	= 20
+SCR_SECRET_DOOR	= 4
+SCR_STAIRS	= 5
+SCR_PLAYER	= 6
+SCR_POTION	= 7
+SCR_GEM		= 8
+SCR_SCROLL	= 9
+SCR_SKULL	= 10
+SCR_GOLD	= 11
+SCR_BAT		= 12
+SCR_RAT		= 13
+SCR_WORM	= 14
+SCR_SNAKE	= 15
+SCR_ORC		= 16
+SCR_UNDEAD	= 17
+SCR_STALKER	= 18
+SCR_SLIME	= 19
+SCR_WIZARD	= 20
+SCR_DEMON	= 21
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
 SCR_DAMAGE	= 42 + $80
@@ -189,7 +194,6 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	sta $9005
 
 	; init charset
-	; TODO: this can be removed if charset is placed directly into data segment starting at $1c00
 	ldx #0
 @copy:  lda charset,x
 	sta $1c00,x
@@ -419,7 +423,17 @@ init_doors:
 	cpy #@doorbits_end-@doorbits
 	bne @chk
 	beq @skip		; always branches
-@door:	lda #CHR_DOOR
+@door:	; choose door type
+	ldy #CHR_DOOR		; place normal door by default
+	lda dungeon_level
+	cmp #STALKER_LEVEL
+	beq @sdoor		; all doors are secret on stalker level
+	bmi @pr			; no secret door before stalker level
+	jsr rand8		; small chance of placing secret doors after stalker level
+	cmp #0
+	bne @pr
+@sdoor:	ldy #CHR_SECRET_DOOR	; place secret door
+@pr:	tya
 	jsr CHROUT
 @skip:  pla			; restore Y
 	tay	
@@ -533,6 +547,8 @@ reveal:	lda #1			; top-right segment
 	beq @end
 	cpx #SCR_DOOR
 	beq @end
+	cpx #SCR_SECRET_DOOR
+	beq @end
 	; --- spawn diagonal ray ---
 	ldy reveal_x
 	ldx reveal_y
@@ -544,6 +560,8 @@ reveal:	lda #1			; top-right segment
 	cpx #SCR_WALL
 	beq @end2
 	cpx #SCR_DOOR
+	beq @end2
+	cpx #SCR_SECRET_DOOR
 	beq @end2
 	ldx reveal_tmp		; restore X
 	; step diagonally
@@ -996,6 +1014,7 @@ charset:.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
 	.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
 	.byte $00,$00,$00,$00,$00,$18,$18,$00	; . floor
 	.byte $ff,$f7,$f7,$c1,$f7,$f7,$ff,$ff	; + door
+	.byte $aa,$55,$aa,$5d,$aa,$55,$aa,$55	; (secret door)
 	.byte $70,$18,$0c,$06,$0c,$18,$70,$00	; > stairs
 	.byte $1c,$22,$4a,$56,$4c,$20,$1e,$00	; @ player
 	.byte $08,$08,$08,$08,$00,$00,$08,$00	; ! potion
@@ -1019,6 +1038,7 @@ colors = _colors-SCR_WALL
 _colors:.byte COLOR_CYAN			; # wall
 	.byte COLOR_CYAN			; . floor
 	.byte COLOR_CYAN			; + door
+	.byte COLOR_CYAN			; (secret door)
 	.byte COLOR_WHITE			; > stairs
 plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_RED				; ! potion
