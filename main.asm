@@ -583,8 +583,8 @@ reveal:	lda #1			; top-right segment
 	lda (line_ptr),y
 	tax			; X = screen code to be revealed
 	lda (color_ptr),y
-	cmp #COLOR_UNSEEN	; don't touch already seen blocks (preserves monster colors)
 	and #7
+	cmp #COLOR_UNSEEN	; don't touch already seen blocks (preserves monster colors)
 	bne @skip
 	lda colors,x
 	sta (color_ptr),y
