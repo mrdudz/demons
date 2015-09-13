@@ -8,7 +8,7 @@ VOLUME		= 15
 
 init_music:
 	lda #VOLUME		; set music volume
-	sta $900e
+	sta vic_volume
 	sei
 	lda #<irq
 	sta $0314
@@ -18,10 +18,42 @@ init_music:
 	rts
 
 	;*****************************************************************
+	; pause music
+	;*****************************************************************
+
+pause_music:
+	sei
+	lda #1
+	sta vic_bass
+	sta vic_alto
+	sta vic_soprano
+	sta vic_noise
+	inc mute_music
+	cli
+	rts
+
+	;*****************************************************************
+	; resume music
+	;*****************************************************************
+
+resume_music:
+	lda #0
+	sta vic_bass
+	sta vic_alto
+	sta vic_soprano
+	sta vic_noise
+	dec mute_music
+	lda #MSG_DELAY
+	sta delay_length
+	rts
+
+	;*****************************************************************
 	; music interrupt handler
 	;*****************************************************************
 
-irq:	lda tempo_counter	; increment music pos
+irq:	lda mute_music
+	bne @done
+	lda tempo_counter	; increment music pos
 	clc
 	adc #TEMPO 
 	sta tempo_counter
@@ -62,13 +94,13 @@ irq:	lda tempo_counter	; increment music pos
 	lsr
 	lsr
 	jsr dochan
-	sta $900a
+	sta vic_bass
 
 	; play alto
 	lda song,x		; A = alto pattern
 	and #$f
 	jsr dochan
-	sta $900b
+	sta vic_alto
 
 	; play soprano
 	lda song+1,x		; A = soprano pattern
@@ -77,16 +109,16 @@ irq:	lda tempo_counter	; increment music pos
 	lsr
 	lsr
 	jsr dochan
-	sta $900c
+	sta vic_soprano
 
 	; play noise
 	lda song+1,x		; A = noise pattern
 	and #$f
 	jsr dochan
-	sta $900d
+	sta vic_noise
 
 	;inc $900f
-	jmp $eabf
+@done:	jmp $eabf
 
 dochan:	; in: A = pattern
 	asl

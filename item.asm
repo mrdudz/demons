@@ -41,8 +41,20 @@ use_potion:
 	bcs @done
 	lda #14
 	sta $900f
+	; play sound
+	jsr pause_music
+	lda #1
+	sta delay_length
+	ldx #128
+@sfx:	stx vic_bass
 	jsr delay
-	jsr delay
+	inx
+	inx
+	inx
+	inx
+	bne @sfx
+	jsr resume_music
+	;
 	lda #8
 	sta $900f
 	ldx #<usepot
@@ -63,8 +75,19 @@ use_gem:
 	bcs @done
 	lda #93
 	sta $900f
+	; play sound
+	jsr pause_music
+	lda #1
+	sta delay_length
+	ldx #50
+@sfx:	jsr rand8
+	ora #$80
+	sta vic_soprano
 	jsr delay
-	jsr delay
+	dex
+	bne @sfx
+	jsr resume_music
+	;
 	ldx #<usegem
 	ldy #>usegem
 	jsr print_msg
@@ -101,8 +124,20 @@ use_scroll:
 	bcs @done
 	lda #14
 	sta $900f
+	; play sound
+	jsr pause_music
+	lda #1
+	sta delay_length
+	ldx #192
+@sfx:	stx vic_soprano
 	jsr delay
-	jsr delay
+	inx
+	inx
+	inx
+	inx
+	bne @sfx
+	jsr resume_music
+	;
 	lda #8
 	sta $900f
 	ldx #<usescr
@@ -130,10 +165,12 @@ use_skull:
 	ldy #>useskul
 	jsr print_msg
 	; shake effect
+	jsr pause_music
 	lda vic_scr_center	
 	sta $0			; $0 = old screen center value
 	ldx #0
 @loop:	jsr rand8
+	sta vic_noise
 	and #7
 	adc $0
 	sbc #3
@@ -154,6 +191,7 @@ use_skull:
 	jsr @killall
 	ldx #11
 	jsr @killall
+	jsr resume_music
 @done:	rts
 
 @killall: ; reveal 256 bytes
@@ -167,7 +205,7 @@ use_skull:
 	cmp #SCR_BAT
 	bmi @skip		; skip non-monster cells
 	cmp #SCR_DEMON
-	beq @skip		; demons are immune to skulls
+	bpl @skip		; demons are immune to skulls
 	lda (color_ptr),y
 	and #7
 	cmp #COLOR_UNSEEN
@@ -176,16 +214,13 @@ use_skull:
 	sty cursor_x
 	txa
 	pha
-	tya
-	pha
 	jsr damage_flash
 	ldx #<mondies
 	ldy #>mondies
 	jsr print_msg
 	pla
-	tay
-	pla
 	tax
+	ldy cursor_x
 	lda #SCR_FLOOR
 	sta (line_ptr),y
 	lda #COLOR_EXPLORED

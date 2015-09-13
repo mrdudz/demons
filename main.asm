@@ -132,6 +132,7 @@ pattern_row	= $26		; current row 0-31
 pattern_row2	= $27		; pattern row/2
 song_pos	= $28
 note_mask	= $29		; temp for music routine
+mute_music	= $2a
 line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 cursor_x	= $d3
 cursor_y	= $d6
@@ -147,6 +148,11 @@ skulls		= scrolls+3
 
 ; VIC registers
 vic_scr_center	= $9000
+vic_bass	= $900a
+vic_alto	= $900b
+vic_soprano	= $900c
+vic_noise	= $900d
+vic_volume	= $900e
 vic_colors	= $900f
 
 	.byt $01,$10			; PRG file header (starting address of the program)
@@ -238,6 +244,14 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 mainloop:
 	jsr waitkey
 	jsr update_player
+
+	; update invisibility
+	dec invisibility
+	bne @skip
+	lda #COLOR_WHITE
+	sta plcolor
+@skip:
+
 	jsr reveal
 	jsr update_enemies
 
@@ -252,13 +266,6 @@ mainloop:
 	jsr move
 	jsr print_hex
 	.endif
-
-	; update invisibility
-	dec invisibility
-	bne @skip
-	lda #COLOR_WHITE
-	sta plcolor
-@skip:
 
 	inc turn
 	jmp mainloop
@@ -797,22 +804,22 @@ print_msg2:
 	;*****************************************************************
 
 damage_flash:
-	lda #SCR_DAMAGE
-	ldy #COLOR_YELLOW
-damage_flash2:
-	sta damage_char
-	sty cur_color
-	ldy cursor_x
 	lda (line_ptr),y
 	pha			; save char
 	lda (color_ptr),y
 	pha			; save color
-	lda damage_char
+	lda #SCR_DAMAGE
 	sta (line_ptr),y
-	lda cur_color
+	lda #COLOR_YELLOW
 	sta (color_ptr),y
+	; damage sound
+	jsr pause_music
+	lda #150
+	sta vic_noise
 	jsr delay
-	pla			; restore color
+	jsr resume_music
+	;
+damres: pla			; restore color
 	sta (color_ptr),y	
 	pla			; restore char
 	sta (line_ptr),y	
@@ -821,14 +828,21 @@ damage_flash2:
 	rts
 
 miss_flash:
+	lda (line_ptr),y
+	pha			; save char
+	lda (color_ptr),y
+	pha			; save color
 	lda px
 	cmp mon_x
 	beq @ver
 	lda #SCR_MISS_H
 	bne @hor		; always branch
 @ver:	lda #SCR_MISS_V
-@hor:	ldy #COLOR_WHITE
-	jmp damage_flash2	; jsr damage_flash2 + rts
+@hor:	sta (line_ptr),y
+	lda #COLOR_WHITE
+	sta (color_ptr),y
+	jsr delay
+	jmp damres
 
 	;*****************************************************************
 	; update hp

@@ -14,6 +14,20 @@ init_player:
 	; update player
 	;*****************************************************************
 
+blocked:
+	ldx #<block
+	ldy #>block
+	jmp print_msg		; jsr print_msg + rts
+
+open_door:
+	lda #COLOR_UNSEEN
+	sta cur_color
+	lda #SCR_FLOOR
+	jsr plot
+	ldx #<opened
+	ldy #>opened
+	jmp print_msg		; jsr print_msg + rts
+
 update_player:
 	; handle movement
 	ldy px
@@ -78,20 +92,6 @@ movepl:	sty px			; store new pos
 	lda #SCR_FLOOR		; erase old player
 	jmp plot		; jsr print_msg + rts
 
-blocked:
-	ldx #<block
-	ldy #>block
-	jmp print_msg		; jsr print_msg + rts
-
-open_door:
-	lda #COLOR_UNSEEN
-	sta cur_color
-	lda #SCR_FLOOR
-	jsr plot
-	ldx #<opened
-	ldy #>opened
-	jmp print_msg		; jsr print_msg + rts
-
 enter_stairs:
 	ldx #<descend
 	ldy #>descend
@@ -122,21 +122,29 @@ pickup_item:
 @skip:	ldx #<found			; print found
 	ldy #>found
 	jsr print_msg
+	jsr pause_music
+	lda #3
+	sta delay_length
+	lda #225
+	sta vic_soprano
+	jsr delay
+	lda #245
+	sta vic_soprano
+	jsr delay
+	jsr resume_music
 	pla				; restore X,Y
 	tay
 	pla
 	tax
 	jmp movepl
 
-mul3:	.byte 0,3,6,9
-
 	;*****************************************************************
 	; player attack, in: X,Y = target coordinates
 	;*****************************************************************
 
 player_attack:
-	lda #COLOR_WHITE
-	sta plcolor			; end invisibility
+	lda #1				; end invisibility
+	sta invisibility		
 	stx mon_y			; save target's coordinates
 	sty mon_x
 	lda (line_ptr),y
@@ -236,18 +244,21 @@ player_attack:
 	ldy #>levelup
 	jsr print_msg
 	; level up effect
+	jsr pause_music
+	lda #150
+	sta vic_soprano
 	ldx #7
 	stx delay_length
 @floop: txa
 	ldy #8
 @floop2:sta COLOR_RAM,y
+	inc vic_soprano
 	dey
 	bpl @floop2
 	jsr delay
 	dex
 	bne @floop
-	lda #MSG_DELAY
-	sta delay_length
+	jsr resume_music
 	;
 	inc player_level
 	lda #0
@@ -327,7 +338,7 @@ gameover:
 	jsr PRINT_INT
 	lda #'0'			; print extra zero so that scores look higher
 	jsr CHROUT
-	ldx #6				; rebase characters to start from $80
+	ldx #5				; rebase characters to start from $80
 @reb: 	lda SCREEN+16,x
 	ora #$80
 	sta SCREEN+16,x
@@ -338,3 +349,5 @@ gameover:
 	cmp #32
 	bne @loop
 	jmp start
+
+mul3:	.byte 0,3,6,9
