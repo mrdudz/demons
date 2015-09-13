@@ -51,9 +51,7 @@ resume_music:
 	; music interrupt handler
 	;*****************************************************************
 
-irq:	lda mute_music
-	bne @done
-	lda tempo_counter	; increment music pos
+irq:	lda tempo_counter	; increment music pos
 	clc
 	adc #TEMPO 
 	sta tempo_counter
@@ -75,6 +73,9 @@ irq:	lda mute_music
 	lda #0
 @skips:	sta song_pos
 @skip:
+
+	lda mute_music
+	bne @done
 
 	; pattern position
 	lda pattern_row

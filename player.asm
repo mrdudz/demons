@@ -122,16 +122,6 @@ pickup_item:
 @skip:	ldx #<found			; print found
 	ldy #>found
 	jsr print_msg
-	jsr pause_music
-	lda #3
-	sta delay_length
-	lda #225
-	sta vic_soprano
-	jsr delay
-	lda #245
-	sta vic_soprano
-	jsr delay
-	jsr resume_music
 	pla				; restore X,Y
 	tay
 	pla

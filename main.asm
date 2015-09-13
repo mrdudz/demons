@@ -860,6 +860,17 @@ miss_flash:
 @hor:	sta (line_ptr),y
 	lda #COLOR_WHITE
 	sta (color_ptr),y
+	; play sound
+	jsr pause_music
+	lda #4
+	sta delay_length
+	lda #225
+	sta vic_soprano
+	jsr delay
+	lda #245
+	sta vic_soprano
+	jsr delay
+	jsr resume_music
 	jsr delay
 	jmp damres
 
