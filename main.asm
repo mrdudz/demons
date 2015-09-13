@@ -9,7 +9,6 @@ COLOR_RAM	= $9600
 
 ; constants
 INITIAL_HP	= 6
-MAX_ENEMIES	= 16
 PLAYER_ACCURACY	= 140
 ENEMY_ACCURACY	= 80
 LOOT_DROP	= 30
@@ -751,11 +750,9 @@ print_msg2:
 @print_name:
 	tya		; save Y
 	pha
-	lda cur_name
-	asl
-	asl
-	asl
-	tay
+	ldy cur_name	; Y = monster/item index
+	lda nameoff,y
+	tay		; Y = start of name offset
 @mloop:	lda names,y
 	beq @mdone
 	iny
@@ -935,7 +932,7 @@ add_score:
 	;*****************************************************************
 
 welcome:.byte "DEMONS OF DEX",0
-descend:.byte "DESCENDING...",0
+descend:.byte "DESCENDING",0
 youhit:	.byte "YOU HIT THE %!",0
 youmiss:.byte "YOU MISS.",0
 youdie: .byte "YOU DIE! SCORE:",0
@@ -958,23 +955,41 @@ useskul:.byte "CHAOS!",0
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_SKULL,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
 statcol:.byte 2,2,2,2,2,2,2,2,1,1,5,1,1,4,1,1,7,1,1,1,1,1
 
-	; monster and item names (the unused bytes could be used to store variables)
-names = _names-SCR_POTION*8
-_names: .byte "POTION",0,0
-	.byte "GEM",0,0,0,0,0
-	.byte "SCROLL",0,0
-	.byte "SKULL",0,0,0
-	.byte "GOLD",0,0,0,0
-	.byte "BAT",0,0,0,0,0
-	.byte "RAT",0,0,0,0,0
-	.byte "WORM",0,0,0,0
-	.byte "SNAKE",0,0,0
-	.byte "ORC", 0,0,0,0,0
-	.byte "UNDEAD",0,0
-	.byte "STALKER",0
-	.byte "SLIME",0,0,0
-	.byte "WIZARD",0,0
-	.byte "DEMON",0,0,0
+	; monster and item names
+names:
+_potion:.byte "POTION",0
+_gem:	.byte "GEM",0
+_scroll:.byte "SCROLL",0
+_skull:	.byte "SKULL",0
+_gold:	.byte "GOLD",0
+_bat:	.byte "BAT",0
+_rat:	.byte "RAT",0
+_worm:	.byte "WORM",0
+_snake:	.byte "SNAKE",0
+_orc:	.byte "ORC",0
+_undead:.byte "UNDEAD",0
+_stalke:.byte "STALKER",0
+_slime:	.byte "SLIME",0
+_wizard:.byte "WIZARD",0
+_demon:	.byte "DEMON",0
+
+	; name offsets
+nameoff = _nameof-SCR_POTION
+_nameof:.byte _potion-names
+	.byte _gem-names
+	.byte _scroll-names
+	.byte _skull-names
+	.byte _gold-names
+	.byte _bat-names
+	.byte _rat-names
+	.byte _worm-names
+	.byte _snake-names
+	.byte _orc-names
+	.byte _undead-names
+	.byte _stalke-names
+	.byte _slime-names
+	.byte _wizard-names
+	.byte _demon-names
 
 	; user defined chars
 charset:.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)

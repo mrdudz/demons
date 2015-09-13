@@ -3,6 +3,10 @@ A roguelike for the unexpanded VIC-20
 
 *** SPOILERS AHEAD!! DON'T READ IF YOU ARE GOING TO PLAY THIS GAME ***
 
+Optimization:
+- try to remove end of line and end of basic program zero bytes (would save 2 bytes)
+
+
 Plot:
 Player is a druid. To become a grandmaster of his circle, he must defeat three demons in Dungeon Dex.
 
