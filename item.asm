@@ -20,7 +20,7 @@ random_loot:
 use_potion:
 	lda #0
 	jsr use_item
-	bcs @done
+	bcs rts1
 	lda #14
 	sta $900f
 	; play sound
@@ -42,8 +42,7 @@ use_potion:
 	jsr print_msg
 	lda max_hp
 	sta hp
-	jsr update_hp
-@done:	rts
+	jmp update_hp		; jsr + rts
 
 	;*****************************************************************
 	; use gem
@@ -52,7 +51,7 @@ use_potion:
 use_gem:
 	lda #1
 	jsr use_item
-	bcs @done
+	bcs rts1
 	lda #93
 	sta $900f
 	; play sound
@@ -65,17 +64,16 @@ use_gem:
 	jsr delay2
 	dex
 	bne @sfx
-	jsr resume_music
 	;
-	ldy #usegem-textbase
-	jsr print_msg
+	jsr resume_music	
 	ldx #1
 	jsr @gemreveal
 	ldx #11
 	jsr @gemreveal
 	lda #8
 	sta $900f
-@done:	rts
+	ldy #usegem-textbase
+	jmp print_msg		; jsr + rts
 
 @gemreveal: ; reveal 256 bytes
 	ldy #0
@@ -90,7 +88,7 @@ use_gem:
 	sta (color_ptr),y
 @skip:	iny
 	bne @loop
-	rts
+rts1:	rts
 
 	;*****************************************************************
 	; use scroll
@@ -99,7 +97,7 @@ use_gem:
 use_scroll:
 	lda #2
 	jsr use_item
-	bcs @done
+	bcs rts1
 	lda #14
 	sta $900f
 	; play sound
@@ -117,8 +115,6 @@ use_scroll:
 	;
 	lda #8
 	sta $900f
-	ldy #usescr-textbase
-	jsr print_msg
 	lda #INVISIBLE_TIME
 	sta invisibility
 	lda #COLOR_BLUE
@@ -127,7 +123,8 @@ use_scroll:
 	ldx py
 	jsr move
 	sta (color_ptr),y
-@done:	rts
+	ldy #usescr-textbase
+	jmp print_msg		; jsr + rts
 
 	;*****************************************************************
 	; use skull
@@ -136,7 +133,7 @@ use_scroll:
 use_skull:
 	lda #3
 	jsr use_item
-	bcs @done
+	bcs rts1
 	ldy #useskul-textbase
 	jsr print_msg
 	; shake effect
@@ -166,8 +163,7 @@ use_skull:
 	jsr @killall
 	ldx #11
 	jsr @killall
-	jsr resume_music
-@done:	rts
+	jmp resume_music	; jsr + rts
 
 @killall: ; reveal 256 bytes
 	ldy #0
@@ -221,9 +217,8 @@ use_item:
 	beq @outof
 	dec potions,x
 	ldy #useitem-textbase
-	jsr print_msg2
-	clc
-	rts
+	jmp print_msg2			; clc + jsr + rts
+	;rts
 @outof:	ldy #outof-textbase
 @done:	jsr print_msg2
 	sec

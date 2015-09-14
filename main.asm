@@ -830,7 +830,8 @@ print_msg2:
 	inx
 @chk:	cpx #22
 	bne @loop2
-@done:	rts
+	clc
+	rts
 
 	; prints monster/item name
 @print_name:
