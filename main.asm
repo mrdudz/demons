@@ -487,13 +487,42 @@ init_doors:
 	lda (line_ptr),y
 	cmp #SCR_FLOOR
 	bne @skip
-	jsr check_walls
+
+	; compute bitmask encoding the walls of eight adjacent cells at cursor pos (bit on = wall, bit off = floor)
+	lda #0
+	sta $0			; $0 = result bitmask
+	tay			; Y = 0
+@loop:	; move cursor
+	lda @dirs,y
+	beq @done
+	iny
+	jsr CHROUT
+	asl $0			; shift left bitmask
+	; read screen code under cursor
+	tya			; save y
+	pha
+	ldy cursor_x
+	lda (line_ptr),y
+	cmp #SCR_FLOOR
+	beq @floor
+	; obstacle found, set bit
+	inc $0
+@floor: pla			; restore y
+	tay
+	bne @loop		; always branches
+@done:	; restore cursor
+	lda #CHR_RIGHT
+	jsr CHROUT
+	lda #CHR_DOWN
+	jsr CHROUT
+	lda $0			; bitmask to A
+
 	; check if bits match with a possible door location
 	ldy #0
-@chk:	cmp @doorbits,y
+@chk:	cmp @dbits,y
 	beq @door
 	iny
-	cpy #@doorbits_end-@doorbits
+	cpy #@dbits_end-@dbits
 	bne @chk
 	beq @skip		; always branches
 @door:	; choose door type
@@ -517,46 +546,10 @@ init_doors:
 	bne @yloop
 	rts
 
-@doorbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
-@doorbits_end: 
-
-	;*****************************************************************
-	; returns a bitmask encoding the walls of eight adjacent cells at cursor pos
-	; bit on = wall, bit off = floor
-	; in: (cursor pos)   out: A=bitmask    trashes: X,Y
-	;*****************************************************************
-
-check_walls:
-	lda #0
-	sta $0		; $0 = result bitmask
-	tay		; Y = 0
-@loop:	; move cursor
-	lda @dirs,y
-	beq @done
-	iny
-	jsr CHROUT
-	asl $0		; shift left bitmask
-	; read screen code under cursor
-	tya		; save y
-	pha
-	ldy cursor_x
-	lda (line_ptr),y
-	cmp #SCR_FLOOR
-	beq @floor
-	; obstacle found, set bit
-	inc $0
-@floor: pla		; restore y
-	tay
-	bne @loop	; always branches
-@done:	; restore cursor
-	lda #CHR_RIGHT
-	jsr CHROUT
-	lda #CHR_DOWN
-	jsr CHROUT
-	lda $0		; result to A
-	rts
-
 @dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
+
+@dbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
+@dbits_end: 
 
 	;*****************************************************************
 	; reveal area
