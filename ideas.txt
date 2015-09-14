@@ -6,7 +6,6 @@ A roguelike for the unexpanded VIC-20
 TODO:
 - yellow slimes
 - slime splitting
-- tweak miss timing
 - consider to change so that only green enemies can be wounded?
 - demon hp = dungeon level/2 ?
 - ranged attack for wizards?
@@ -14,6 +13,7 @@ TODO:
 - BUG: if a single monster is visible and it's 1 cell above player, it won't always attack
 	- to fix this blocked_cells should be cleared at start of update_enemies
 - OPT: update_hp can be inlined if player_damage is modified so that it does not call it (clear last heart in player_die)
+- OPT: inline routines update_enemies, init_doors
 - OPT: try to remove end of line and end of basic program zero bytes (would save 2 bytes)
 - OPT: rebase all text to use screen codes, saves ORA and AND in print_msg
 - OPT: refactor print_msg and print_title to share code?

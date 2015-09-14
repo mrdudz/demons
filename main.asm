@@ -833,22 +833,22 @@ print_msg2:
 
 	; prints monster/item name
 @print_name:
-	tya		; save Y
+	tya			; save Y
 	pha
-	ldy cur_name	; Y = monster/item index
+	ldy cur_name		; Y = monster/item index
 	lda nameoff,y
-	tay		; Y = start of name offset
+	tay			; Y = start of name offset
 @mloop:	lda names,y
 	beq @mdone
 	iny
-	and #$ff-64	; char to screen code
-	ora #$80	; rebase screen codes to start from 128
+	and #$ff-64		; char to screen code
+	ora #$80		; rebase screen codes to start from 128
 	sta SCREEN,x
 	inx
 	bne @mloop
-@mdone:	pla		; restore y
+@mdone:	pla			; restore y
 	tay		
-	bne @loop1
+	bne @loop1		; always branch
 
 	;*****************************************************************
 	; damage flash at cursor
@@ -868,9 +868,8 @@ damage_flash:
 	lda #150
 	sta vic_noise
 	jsr delay
-	jsr resume_music
-	;
-damres: pla			; restore color
+damres:	jsr resume_music
+	pla			; restore color
 	sta (color_ptr),y	
 	pla			; restore char
 	sta (line_ptr),y	
@@ -896,15 +895,14 @@ miss_flash:
 	jsr pause_music
 	lda #225
 	sta vic_soprano
-	lda #4
+	lda #5
 	jsr delay2
 	lda #245
 	sta vic_soprano
-	lda #4
+	lda #9
 	jsr delay2
 	jsr resume_music
-	jsr delay
-	jmp damres
+	beq damres		; always branch
 
 	;*****************************************************************
 	; update hp
