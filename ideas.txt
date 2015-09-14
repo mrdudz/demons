@@ -11,7 +11,6 @@ TODO:
 - ranged attack for wizards?
 - BUG: when player is invisible and attacks a monster, the player icon stays blue
 - OPT: try to remove end of line and end of basic program zero bytes (would save 2 bytes)
-- OPT: print_msg: replace X,Y=adresss arg with x=text offset
 - OPT: inline subroutines that are called only once, e.g. init_stairs, init_player, init_enemies, etc.
 - OPT: pause_music and resume_music: refactor register clears into subroutine
 - OPT: delay: delay uses default arg, delay2 A=delay value
@@ -22,6 +21,7 @@ TODO:
 - different explored color for special levels (green/red/blue)
 - improve monster selection, especially for special levels
 - poisoned condition (snakes)
+- print level numbers when descending and leveling up
 
 Plot:
 Player is a druid. To become a grandmaster of his circle, he must defeat three demons in Dungeon Dex.

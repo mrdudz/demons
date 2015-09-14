@@ -15,8 +15,7 @@ init_player:
 	;*****************************************************************
 
 blocked:
-	ldx #<block
-	ldy #>block
+	ldy #block-textbase
 	jmp print_msg		; jsr print_msg + rts
 
 open_door:
@@ -24,8 +23,7 @@ open_door:
 	sta cur_color
 	lda #SCR_FLOOR
 	jsr plot
-	ldx #<opened
-	ldy #>opened
+	ldy #opened-textbase
 	jmp print_msg		; jsr print_msg + rts
 
 update_player:
@@ -93,8 +91,7 @@ movepl:	sty px			; store new pos
 	jmp plot		; jsr print_msg + rts
 
 enter_stairs:
-	ldx #<descend
-	ldy #>descend
+	ldy #descend-textbase
 	jsr print_msg
 	inc dungeon_level
 	jmp random_level	; jsr random_level + rts
@@ -119,8 +116,7 @@ pickup_item:
 	cmp #'9'+$80			; max 9 items per type
 	beq @skip
 	inc potions,x 		
-@skip:	ldx #<found			; print found
-	ldy #>found
+@skip:	ldy #found-textbase
 	jsr print_msg
 	pla				; restore X,Y
 	tay
@@ -142,8 +138,7 @@ player_attack:
 	jsr rand8
 	cmp #PLAYER_ACCURACY
 	bcc @hit
-	ldx #<youmiss
-	ldy #>youmiss
+	ldy #youmiss-textbase
 	jsr print_msg
 	ldx mon_y			; restore X,Y
 	ldy mon_x
@@ -152,12 +147,10 @@ player_attack:
 
 @wound: lda #COLOR_RED
 	sta (color_ptr),y
-	ldx #<monwoun
-	ldy #>monwoun
+	ldy #monwoun-textbase
 	bne @pr	
 
- @hit:	ldx #<youhit
-	ldy #>youhit
+ @hit:	ldy #youhit-textbase
 	jsr print_msg
 	ldx mon_y			; restore X,Y
 	ldy mon_x
@@ -209,8 +202,7 @@ player_attack:
 	sta (color_ptr),y
 @nstair:lda #SCORE_DEMON
 @ndemon:jsr add_score
-	ldx #<mondies
-	ldy #>mondies
+	ldy #mondies-textbase
 	inc player_xp			; add xp
 @pr:	jsr print_msg
 	; win game when 3rd demon is killed
@@ -230,8 +222,7 @@ player_attack:
 	bcs @nohp			; +2 hp every second level
 	inc max_hp			
 	inc max_hp
-@nohp:	ldx #<levelup
-	ldy #>levelup
+@nohp:	ldy #levelup-textbase
 	jsr print_msg
 	; level up effect
 	jsr pause_music
@@ -297,8 +288,7 @@ wingame:; clear screen effect
 	cpx #6+8
 	bne @yloop
 	; you win
-	ldx #<youwin
-	ldy #>youwin
+	ldy #youwin-textbase
 	bne gameover	; always branches
 
 	;*****************************************************************
@@ -313,8 +303,7 @@ player_damage:
 	rts
 
 player_die:
-	ldx #<youdie
-	ldy #>youdie
+	ldy #youdie-textbase
 gameover:
 	jsr print_msg
 	; print score

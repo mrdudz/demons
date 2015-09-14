@@ -155,8 +155,7 @@ enemy_attack:
 	cmp #ENEMY_ACCURACY
 	bcc @hit
 	; miss
-	ldx #<monmiss
-	ldy #>monmiss
+	ldy #monmiss-textbase
 	jsr print_msg
 	ldx py
 	ldy px
@@ -164,8 +163,7 @@ enemy_attack:
 	jsr miss_flash
 	jmp @end
 @hit:	; hit
-	ldx #<monhit
-	ldy #>monhit
+	ldy #monhit-textbase
 	jsr print_msg
 	ldx py
 	ldy px

@@ -94,7 +94,8 @@ COLOR_UNSEEN	= COLOR_BLACK
 COLOR_EXPLORED	= COLOR_CYAN
 
 ; zero page variables
-print_tmp	= $2		; $2-$3 = temp pointer for print_msg
+;		= $2
+;		= $3
 walker_dx	= $4		; level generator
 walker_dy	= $5
 px		= $6		; player
@@ -762,7 +763,7 @@ print_hex:
 	;*****************************************************************
 	; prints message at the top of the screen
 	; this assumes that color codes of 1st line have been set to white!
-	; X,Y = address of text
+	; Y = text offset
 	;*****************************************************************
 
 print_msg:
@@ -774,11 +775,8 @@ print_msg:
 print_msg2:
 	lda turn
 	sta msg_time
-	stx print_tmp
-	sty print_tmp+1
 	ldx #0			; X = screen pos
-	ldy #0			; Y = text pos 
-@loop1: lda (print_tmp),y
+@loop1: lda textbase,y
 	beq @chk
 	iny
 	cmp #'%'
@@ -791,7 +789,7 @@ print_msg2:
 	inx
 	bne @loop1
 	; clear rest of the line
-@loop2:	lda #32+$80
+@loop2:	lda #SCR_SPACE
 	sta SCREEN,x
 	inx
 @chk:	cpx #22
@@ -1001,10 +999,13 @@ add_score:
 	; data
 	;*****************************************************************
 
-	; text
+	; title texts
 title:	.byte SCR_ANKH,$20,$84,$85,$8d,$8f,$8e,$93,$a0,$8f,$86,$a0,$84,$85,$98,$20,SCR_ANKH,$00	; DEMONS OF DEX
 creds1: .byte $83,$8f,$84,$85,$ba,$a0,$a0,$90,$85,$94,$92,$89,$a0,$88,$81,$8b,$8b,$89,$8e,$85,$8e,$00
 creds2: .byte $8d,$95,$93,$89,$83,$ba,$a0,$8d,$89,$8b,$8b,$8f,$a0,$8b,$81,$8c,$8c,$89,$8e,$85,$8e,$00
+
+	; message texts
+textbase:
 descend:.byte "DESCENDING",0
 youhit:	.byte "YOU HIT THE %!",0
 youmiss:.byte "YOU MISS.",0

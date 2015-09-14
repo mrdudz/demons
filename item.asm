@@ -57,8 +57,7 @@ use_potion:
 	;
 	lda #8
 	sta $900f
-	ldx #<usepot
-	ldy #>usepot
+	ldy #usepot-textbase
 	jsr print_msg
 	lda max_hp
 	sta hp
@@ -88,8 +87,7 @@ use_gem:
 	bne @sfx
 	jsr resume_music
 	;
-	ldx #<usegem
-	ldy #>usegem
+	ldy #usegem-textbase
 	jsr print_msg
 	ldx #1
 	jsr @gemreveal
@@ -140,8 +138,7 @@ use_scroll:
 	;
 	lda #8
 	sta $900f
-	ldx #<usescr
-	ldy #>usescr
+	ldy #usescr-textbase
 	jsr print_msg
 	lda #INVISIBLE_TIME
 	sta invisibility
@@ -161,8 +158,7 @@ use_skull:
 	lda #3
 	jsr use_item
 	bcs @done
-	ldx #<useskul
-	ldy #>useskul
+	ldy #useskul-textbase
 	jsr print_msg
 	; shake effect
 	jsr pause_music
@@ -215,8 +211,7 @@ use_skull:
 	txa
 	pha
 	jsr damage_flash
-	ldx #<mondies
-	ldy #>mondies
+	ldy #mondies-textbase
 	jsr print_msg
 	pla
 	tax
@@ -246,13 +241,11 @@ use_item:
 	cmp #'0'+$80
 	beq @outof
 	dec potions,x
-	ldx #<useitem
-	ldy #>useitem
+	ldy #useitem-textbase
 	jsr print_msg2
 	clc
 	rts
-@outof:	ldx #<outof
-	ldy #>outof
+@outof:	ldy #outof-textbase
 @done:	jsr print_msg2
 	sec
 	rts
