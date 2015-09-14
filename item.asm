@@ -38,11 +38,10 @@ use_potion:
 	;
 	lda #8
 	sta $900f
-	ldy #usepot-textbase
-	jsr print_msg
 	lda max_hp
 	sta hp
-	jmp update_hp		; jsr + rts
+	ldy #usepot-textbase
+	jmp print_msg		; jsr + rts
 
 	;*****************************************************************
 	; use gem

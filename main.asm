@@ -207,7 +207,7 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	.endif
 
 	; title screen
-@tloop:	jsr rand8			; random text color
+titles:	jsr rand8			; random text color
 	and #1
 	tax
 	lda titlec,x
@@ -232,18 +232,7 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	jsr delay2
 	jsr GETIN
 	cmp #0
-	bne @newgame
-	jmp @tloop
-
-@newgame:
-	; init status bar
-	ldx #21
-@stat:	lda statscr,x
-	sta SCREEN+22*22+7,x
-	lda statcol,x
-	sta COLOR_RAM+22*22,x
-	dex
-	bpl @stat
+	beq titles
 
 	; init game vars
 	inc player_level
@@ -252,8 +241,16 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	sta hp
 	sta max_hp
 
-	jsr update_hp
 	jsr random_level
+
+	; init status bar
+	ldx #21
+@stat:	lda statscr,x
+	sta SCREEN+22*22+7,x
+	lda statcol,x
+	sta COLOR_RAM+22*22,x
+	dex
+	bpl @stat
 
 	; dump charset
 	.if 0
@@ -266,6 +263,7 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	.endif
 
 mainloop:
+	jsr update_hp
 	jsr waitkey
 	jsr update_player
 
