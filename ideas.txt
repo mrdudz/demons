@@ -3,13 +3,25 @@ A roguelike for the unexpanded VIC-20
 
 *** SPOILERS AHEAD!! DON'T READ IF YOU ARE GOING TO PLAY THIS GAME ***
 
-BUGS:
-- when player is invisible and attacks a monster, the player icon stays blue
-
-Optimization:
-- try to remove end of line and end of basic program zero bytes (would save 2 bytes)
-- remove charset initialization code by placing char data at $1c00 in the prg file
+TODO:
+- yellow slimes
+- slime splitting
+- consider to change so that only green enemies can be wounded?
+- demon hp = dungeon level/2 ?
+- ranged attack for wizards?
+- BUG: when player is invisible and attacks a monster, the player icon stays blue
+- OPT: try to remove end of line and end of basic program zero bytes (would save 2 bytes)
+- OPT: print_msg: replace X,Y=adresss arg with x=text offset
+- OPT: inline subroutines that are called only once, e.g. init_stairs, init_player, init_enemies, etc.
+- OPT: pause_music and resume_music: refactor register clears into subroutine
+- OPT: delay: delay uses default arg, delay2 A=delay value
+- OPT: rebase all text to use screen codes, saves ORA and AND in print_msg
+- OPT: refactor print_msg and print_title to share code?
 - check that init stairs does not get stuck in infinite loop
+- flashing color effect to the end screen ankh (maybe change # char to something else too?)
+- different explored color for special levels (green/red/blue)
+- improve monster selection, especially for special levels
+- poisoned condition (snakes)
 
 Plot:
 Player is a druid. To become a grandmaster of his circle, he must defeat three demons in Dungeon Dex.
@@ -17,9 +29,6 @@ Player is a druid. To become a grandmaster of his circle, he must defeat three d
 TODO:
 - RNG is terrible, same levels can repeat during a play session (only 256 different levels)
 	-- $E094: Perform RND. To get RND(1) functionality, enter at $E0BB. It will leave its value in (FAC). 
-
-optimization ideas:
-- self-modifying to save loop registers
 
 levels:
 - dungeon with 18 levels
@@ -65,8 +74,7 @@ monsters:
 - WIZARD: purple '@' wizards can teleport and shoot lightning bolts
 - DEMON: yellow 'X'
 - DRAGON: red 'D'
-- TODO: WORM white 'w'
-- TODO: GOBLIN green 'g'
+- WORM white 'w'
 
 - monster flags:
 	- MF_TOUGH			= 1	; when a hit would kill the monster, it is wounded instead (turns red)
