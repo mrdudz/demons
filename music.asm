@@ -1,21 +1,5 @@
 PATTERN_LENGTH	= 32
 TEMPO		= 34
-VOLUME		= 15
-
-	;*****************************************************************
-	; init music
-	;*****************************************************************
-
-init_music:
-	lda #VOLUME		; set music volume
-	sta vic_volume
-	sei
-	lda #<irq
-	sta $0314
-	lda #>irq
-	sta $0315
-	cli
-	rts
 
 	;*****************************************************************
 	; pause music

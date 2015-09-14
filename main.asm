@@ -196,11 +196,18 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	jsr clearscreen
 
 	.if MUSIC
-	jsr init_music
+	lda #15				; set music volume
+	sta vic_volume
+	sei
+	lda #<irq
+	sta $0314
+	lda #>irq
+	sta $0315
+	cli
 	.endif
 
 	; title screen
-@tloop:	jsr rand8		; random text color
+@tloop:	jsr rand8			; random text color
 	and #1
 	tax
 	lda titlec,x
@@ -209,17 +216,17 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	ldx #6
 	jsr move
 	ldx #0
-	ldy #3			; x offset
+	ldy #3				; x offset
 	jsr print_title
 	; code
 	lda #COLOR_YELLOW
 	sta text_color
 	inx
-	ldy #1+22*5		; x offset
+	ldy #1+22*5			; x offset
 	jsr print_title
 	; music
 	inx
-	ldy #1+22*7		; x offset
+	ldy #1+22*7			; x offset
 	jsr print_title
 	lda #6
 	jsr delay2
@@ -369,10 +376,72 @@ random_level:
 	jmp @loop
 
 @done:	jsr init_doors
-	jsr init_player
-	jsr init_stairs
-	jsr init_enemies
-	jsr init_items
+	;
+	;
+init_player:
+	ldx #10
+	ldy #11
+	stx py
+	sty px
+	lda #SCR_PLAYER
+	jsr plot
+	;
+	;
+init_stairs:
+	jsr randomloc
+	cpy #8			; check that stairs are not too near
+	bmi @ok
+	cpy #14
+	bmi init_stairs
+@ok:	; replace stairs with demon on special levels
+	lda dungeon_level
+	cmp #6
+	beq @demon
+	cmp #12
+	beq @demon
+	cmp #18
+	beq @demon
+	lda #SCR_STAIRS
+	bne @plot		; always branches
+@demon:	lda #SCR_DEMON
+@plot:	jsr plot
+	;
+	;
+init_enemies:
+	lda dungeon_level
+	lsr
+	clc
+	adc #4
+	sta $0			; $0 = spawn count = level/2 + 4
+@loop:	jsr rand8
+	and #7
+	clc
+	adc dungeon_level
+	tay
+	dey			; Y = rand8 & 7 + level - 1
+	lda spawns,y
+	pha
+	jsr randomloc
+	pla
+	jsr plot
+	dec $0
+	bne @loop
+	;
+	;
+init_items:
+	jsr rand8
+	and #7
+	sec
+	sbc #5
+	bmi @done
+	beq @done
+	sta $0			; $0 = count
+@loop:	jsr randomloc
+	jsr random_loot
+	dec $0
+	bne @loop
+@done:	;
+	;
 
 	; test level for reveal routine
 	.if 0
@@ -397,36 +466,12 @@ random_level:
 	inx
 	cpx #21
 	bne @floop
-	jsr init_player
 	.endif
 
 	lda #DEMON_HP	; init demon hp
 	sta demon_hp
 
 	jmp reveal	; jsr reveal + rts
-
-	;*****************************************************************
-	; initialize stairs
-	;*****************************************************************
-
-init_stairs:
-	jsr randomloc
-	cpy #8			; check that stairs are not too near
-	bmi @ok
-	cpy #14
-	bmi init_stairs
-@ok:	; replace stairs with demon on special levels
-	lda dungeon_level
-	cmp #6
-	beq @demon
-	cmp #12
-	beq @demon
-	cmp #18
-	beq @demon
-	lda #SCR_STAIRS
-	bne @plot		; always branches
-@demon:	lda #SCR_DEMON
-@plot:	jmp plot		; jmp + rts
 
 	;*****************************************************************
 	; initialize doors
@@ -1092,6 +1137,12 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_GREEN			; S slime
 	.byte COLOR_PURPLE			; @ wizard
 	.byte COLOR_PURPLE			; D demon
+
+	; random spawns, indexed with rand8() & 7 + level - 1
+spawns:	.byte SCR_BAT,SCR_RAT,SCR_RAT,SCR_RAT,SCR_BAT,SCR_WORM,SCR_SNAKE
+	.byte SCR_RAT,SCR_SNAKE,SCR_SNAKE,SCR_BAT,SCR_RAT,SCR_UNDEAD,SCR_UNDEAD
+	.byte SCR_ORC,SCR_ORC,SCR_UNDEAD,SCR_STALKER,SCR_UNDEAD,SCR_STALKER,SCR_SNAKE
+	.byte SCR_ORC,SCR_SLIME,SCR_WIZARD,SCR_WIZARD
 
 	.segment "CHARS"
 

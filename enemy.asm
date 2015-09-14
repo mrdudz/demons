@@ -1,29 +1,4 @@
 	;*****************************************************************
-	; initialize enemies
-	;*****************************************************************
-
-init_enemies:
-	lda dungeon_level
-	lsr
-	clc
-	adc #4
-	sta $0			; $0 = spawn count = level/2 + 4
-@loop:	jsr rand8
-	and #7
-	clc
-	adc dungeon_level
-	tay
-	dey			; Y = rand8 & 7 + level - 1
-	lda spawns,y
-	pha
-	jsr randomloc
-	pla
-	jsr plot
-	dec $0
-	bne @loop
-	rts
-
-	;*****************************************************************
 	; update enemies
 	;*****************************************************************
 
@@ -174,13 +149,3 @@ enemy_attack:
 	ldy mon_x
 	clc			; success => clear carry
 	rts
-
-	;*****************************************************************
-	; data
-	;*****************************************************************
-
-	; random spawns, indexed with rand8() & 7 + level - 1
-spawns:	.byte SCR_BAT,SCR_RAT,SCR_RAT,SCR_RAT,SCR_BAT,SCR_WORM,SCR_SNAKE
-	.byte SCR_RAT,SCR_SNAKE,SCR_SNAKE,SCR_BAT,SCR_RAT,SCR_UNDEAD,SCR_UNDEAD
-	.byte SCR_ORC,SCR_ORC,SCR_UNDEAD,SCR_STALKER,SCR_UNDEAD,SCR_STALKER,SCR_SNAKE
-	.byte SCR_ORC,SCR_SLIME,SCR_WIZARD,SCR_WIZARD
