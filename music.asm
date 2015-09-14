@@ -24,27 +24,22 @@ init_music:
 pause_music:
 	sei
 	lda #1
-	sta vic_bass
-	sta vic_alto
-	sta vic_soprano
-	sta vic_noise
-	inc mute_music
-	cli
-	rts
+	bne vicregs	; always branches
 
 	;*****************************************************************
 	; resume music
 	;*****************************************************************
 
 resume_music:
+	lda #MSG_DELAY
+	sta delay_length
 	lda #0
-	sta vic_bass
+vicregs:sta vic_bass
 	sta vic_alto
 	sta vic_soprano
 	sta vic_noise
-	dec mute_music
-	lda #MSG_DELAY
-	sta delay_length
+	sta mute_music
+	cli
 	rts
 
 	;*****************************************************************
