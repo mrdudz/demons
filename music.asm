@@ -31,8 +31,6 @@ pause_music:
 	;*****************************************************************
 
 resume_music:
-	lda #MSG_DELAY
-	sta delay_length
 	lda #0
 vicregs:sta vic_bass
 	sta vic_alto

@@ -6,15 +6,16 @@ A roguelike for the unexpanded VIC-20
 TODO:
 - yellow slimes
 - slime splitting
+- tweak miss timing
 - consider to change so that only green enemies can be wounded?
 - demon hp = dungeon level/2 ?
 - ranged attack for wizards?
 - BUG: when player is invisible and attacks a monster, the player icon stays blue
 - OPT: try to remove end of line and end of basic program zero bytes (would save 2 bytes)
 - OPT: inline subroutines that are called only once, e.g. init_stairs, init_player, init_enemies, etc.
-- OPT: delay: delay uses default arg, delay2 A=delay value
 - OPT: rebase all text to use screen codes, saves ORA and AND in print_msg
 - OPT: refactor print_msg and print_title to share code?
+- OPT: gem reveal looks like it could be optimized
 - check that init stairs does not get stuck in infinite loop
 - flashing color effect to the end screen ankh (maybe change # char to something else too?)
 - different explored color for special levels (green/red/blue)

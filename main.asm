@@ -17,7 +17,7 @@ DEMON_HP	= 3
 SCORE_MONSTER	= 1
 SCORE_GOLD	= 10
 SCORE_DEMON	= 100
-MSG_DELAY	= 25		; message delay length in 1/60 seconds
+DEFAULT_DELAY	= 25		; default delay value for delay routine in 1/60 seconds
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
@@ -207,7 +207,6 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	sta text_color
 	ldy #0
 	ldx #6
-	stx delay_length
 	jsr move
 	ldx #0
 	ldy #3			; x offset
@@ -222,7 +221,8 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	inx
 	ldy #1+22*7		; x offset
 	jsr print_title
-	jsr delay
+	lda #6
+	jsr delay2
 	jsr GETIN
 	cmp #0
 	bne @newgame
@@ -244,8 +244,6 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	lda #INITIAL_HP
 	sta hp
 	sta max_hp
-	lda #MSG_DELAY
-	sta delay_length
 
 	jsr update_hp
 	jsr random_level
@@ -859,14 +857,14 @@ miss_flash:
 	sta (color_ptr),y
 	; play sound
 	jsr pause_music
-	lda #4
-	sta delay_length
 	lda #225
 	sta vic_soprano
-	jsr delay
+	lda #4
+	jsr delay2
 	lda #245
 	sta vic_soprano
-	jsr delay
+	lda #4
+	jsr delay2
 	jsr resume_music
 	jsr delay
 	jmp damres
@@ -917,9 +915,13 @@ clearscreen:
 
 	;*****************************************************************
 	; short delay about half a second, trashes: A
+	; delay uses default delay value
+	; delay2 uses default value in A
 	;*****************************************************************
 
-delay:	lda $a2
+delay:	lda #DEFAULT_DELAY
+delay2: sta delay_length
+	lda $a2
 	sta delay_tmp
 @loop:	sec
 	lda $a2

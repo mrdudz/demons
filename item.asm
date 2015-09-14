@@ -43,11 +43,10 @@ use_potion:
 	sta $900f
 	; play sound
 	jsr pause_music
-	lda #1
-	sta delay_length
 	ldx #128
 @sfx:	stx vic_bass
-	jsr delay
+	lda #1
+	jsr delay2
 	inx
 	inx
 	inx
@@ -76,13 +75,12 @@ use_gem:
 	sta $900f
 	; play sound
 	jsr pause_music
-	lda #1
-	sta delay_length
 	ldx #50
 @sfx:	jsr rand8
 	ora #$80
 	sta vic_soprano
-	jsr delay
+	lda #1
+	jsr delay2
 	dex
 	bne @sfx
 	jsr resume_music
@@ -124,11 +122,10 @@ use_scroll:
 	sta $900f
 	; play sound
 	jsr pause_music
-	lda #1
-	sta delay_length
 	ldx #192
 @sfx:	stx vic_soprano
-	jsr delay
+	lda #1
+	jsr delay2
 	inx
 	inx
 	inx
@@ -220,8 +217,8 @@ use_skull:
 	sta (line_ptr),y
 	lda #COLOR_EXPLORED
 	sta (color_ptr),y
-	jsr delay
-	jsr delay
+	lda #50
+	jsr delay2
 @skip:	dex
 	bne @kloop
 	rts

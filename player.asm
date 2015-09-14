@@ -229,14 +229,14 @@ player_attack:
 	lda #150
 	sta vic_soprano
 	ldx #7
-	stx delay_length
 @floop: txa
 	ldy #8
 @floop2:sta COLOR_RAM,y
 	inc vic_soprano
 	dey
 	bpl @floop2
-	jsr delay
+	lda #7
+	jsr delay2
 	dex
 	bne @floop
 	jsr resume_music
@@ -254,15 +254,14 @@ player_attack:
 	;*****************************************************************
 
 wingame:; clear screen effect
-	lda #1			; set smaller delay
-	sta delay_length
 	ldx #0
 @clear:	jsr rand8
 	tay
 	lda #SCR_SPACE
 	sta SCREEN+22,y
 	sta SCREEN+228,y
-	jsr delay
+	lda #1
+	jsr delay2
 	dex
 	bne @clear
 	; draw ankh
