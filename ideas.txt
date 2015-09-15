@@ -1,7 +1,19 @@
 Demons of Dex
 A roguelike for the unexpanded VIC-20
+Copyright (C) 2015 Petri Häkkinen
 
-*** SPOILERS AHEAD!! DON'T READ IF YOU ARE GOING TO PLAY THIS GAME ***
+You are Eino, a member of the druids.
+Your master, the arch druid has become
+old and it is time for somebody to replace
+him. As a young initiate you are sent to
+dungeon Dex, a mysterious labyrinth and
+a home to vile creatures. You must enter
+the dungeon alone and defeat three demon
+lords within. Only then can you achieve
+true enlightenment and ascend to become
+the next arch druid.
+
+Good luck!
 
 TODO:
 - yellow slimes
@@ -12,7 +24,6 @@ TODO:
 - OPT: inline routines update_enemies, init_doors
 - OPT: try to remove end of line and end of basic program zero bytes (would save 2 bytes)
 - OPT: rebase all text to use screen codes, saves ORA and AND in print_msg
-- OPT: refactor print_msg and print_title to share code?
 - OPT: replace JMPs with branches
 - check that init stairs does not get stuck in infinite loop
 - flashing color effect to the end screen ankh (maybe change # char to something else too?)
@@ -20,11 +31,6 @@ TODO:
 - improve monster selection, especially for special levels
 - poisoned condition (snakes)
 - print level numbers when descending and leveling up
-
-Plot:
-Player is a druid. To become a grandmaster of his circle, he must defeat three demons in Dungeon Dex.
-
-TODO:
 - RNG is terrible, same levels can repeat during a play session (only 256 different levels)
 	-- $E094: Perform RND. To get RND(1) functionality, enter at $E0BB. It will leave its value in (FAC). 
 
