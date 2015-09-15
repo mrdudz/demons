@@ -23,7 +23,6 @@ TODO:
 - ranged attack for wizards?
 - OPT: inline routines update_enemies, init_doors
 - OPT: try to remove end of line and end of basic program zero bytes (would save 2 bytes)
-- OPT: rebase all text to use screen codes, saves ORA and AND in print_msg
 - OPT: replace JMPs with branches
 - check that init stairs does not get stuck in infinite loop
 - flashing color effect to the end screen ankh (maybe change # char to something else too?)

@@ -755,7 +755,7 @@ plot:	jsr move
 plot2:	sta (line_ptr),y
 	lda cur_color
 	sta (color_ptr),y
-	rts
+rts2:	rts
 
 	;*****************************************************************
 	; prints text at cursor
@@ -765,14 +765,13 @@ plot2:	sta (line_ptr),y
 
 print_title:
 	lda title,x
-	beq @done
+	beq rts2
 	inx
 	sta (line_ptr),y
 	lda text_color
 	sta (color_ptr),y
 	iny
-	bne print_title
-@done:	rts
+	bne print_title		; always branches
 
 	;*****************************************************************
 	; prints 8-bit hex number at cursor, in: A
@@ -819,8 +818,6 @@ print_msg2:
 	iny
 	cmp #'%'
 	beq @print_name
-	and #$ff-64		; char to screen code
-	ora #$80		; rebase screen codes to start from 128
 	sta SCREEN,x
 	lda #COLOR_WHITE
 	sta COLOR_RAM,x
@@ -845,8 +842,6 @@ print_msg2:
 @mloop:	lda names,y
 	beq @mdone
 	iny
-	and #$ff-64		; char to screen code
-	ora #$80		; rebase screen codes to start from 128
 	sta SCREEN,x
 	inx
 	bne @mloop
@@ -1047,25 +1042,25 @@ creds2: .byte $8d,$95,$93,$89,$83,$ba,$a0,$8d,$89,$8b,$8b,$8f,$a0,$8b,$81,$8c,$8
 
 	; message texts
 textbase:
-descend:.byte "DESCENDING",0
-youhit:	.byte "YOU HIT THE %!",0
-youmiss:.byte "YOU MISS.",0
-youdie: .byte "YOU DIE! SCORE:",0
-monhit: .byte "% HITS YOU!",0
-monmiss:.byte "% MISSES!",0
-mondies:.byte "% DIES!",0
-monwoun:.byte "% IS WOUNDED!",0
-opened:	.byte "OPENED.",0
-block:	.byte "BLOCKED.",0
-found:	.byte "FOUND %.",0
-outof:	.byte "NO %S.",0
-useitem:.byte "USE %",0
-usepot:	.byte "HEALED!",0
-usegem:	.byte "A VISION!",0
-usescr:	.byte "TURNED INVISIBLE!",0
-useskul:.byte "CHAOS!",0
-youwin:	.byte "YOU WIN! SCORE:",0
-levelup:.byte "LEVEL UP!",0
+descend:.byte $84,$85,$93,$83,$85,$8e,$84,$89,$8e,$87,$00				; DESCENDING
+youhit: .byte $99,$8f,$95,$a0,$88,$89,$94,$a0,$94,$88,$85,$a0,$25,$a1,$00		; YOU HIT THE %!
+youmiss:.byte $99,$8f,$95,$a0,$8d,$89,$93,$93,$ae,$00					; YOU MISS.
+youdie: .byte $99,$8f,$95,$a0,$84,$89,$85,$a1,$a0,$93,$83,$8f,$92,$85,$ba,$00		; YOU DIE! SCORE:
+monhit: .byte $25,$a0,$88,$89,$94,$93,$a0,$99,$8f,$95,$a1,$00				; % HITS YOU!
+monmiss:.byte $25,$a0,$8d,$89,$93,$93,$85,$93,$a1,$00					; % MISSES!
+mondies:.byte $25,$a0,$84,$89,$85,$93,$a1,$00						; % DIES!
+monwoun:.byte $25,$a0,$89,$93,$a0,$97,$8f,$95,$8e,$84,$85,$84,$a1,$00			; % IS WOUNDED!
+opened: .byte $8f,$90,$85,$8e,$85,$84,$ae,$00						; OPENED.
+block:  .byte $82,$8c,$8f,$83,$8b,$85,$84,$ae,$00					; BLOCKED.
+found:  .byte $86,$8f,$95,$8e,$84,$a0,$25,$ae,$00					; FOUND %.
+outof:  .byte $8e,$8f,$a0,$25,$93,$ae,$00						; NO %S.
+useitem:.byte $95,$93,$85,$a0,$25,$00							; USE %
+usepot: .byte $88,$85,$81,$8c,$85,$84,$a1,$00						; HEALED!
+usegem: .byte $81,$a0,$96,$89,$93,$89,$8f,$8e,$a1,$00					; A VISION!
+usescr: .byte $94,$95,$92,$8e,$85,$84,$a0,$89,$8e,$96,$89,$93,$89,$82,$8c,$85,$a1,$00	; TURNED INVISIBLE!
+useskul:.byte $83,$88,$81,$8f,$93,$a1,$00						; CHAOS!
+youwin: .byte $99,$8f,$95,$a0,$97,$89,$8e,$a1,$a0,$93,$83,$8f,$92,$85,$ba,$00		; YOU WIN! SCORE:
+levelup:.byte $8c,$85,$96,$85,$8c,$a0,$95,$90,$a1,$00					; LEVEL UP!
 
 titlec:	.byte COLOR_RED,COLOR_YELLOW	; title colors
 
@@ -1075,21 +1070,21 @@ statcol:.byte 2,2,2,2,2,2,2,2,1,1,5,1,1,4,1,1,7,1,1,1,1,1
 
 	; monster and item names
 names:
-_potion:.byte "POTION",0
-_gem:	.byte "GEM",0
-_scroll:.byte "SCROLL",0
-_ankh:	.byte "ANKH",0
-_gold:	.byte "GOLD",0
-_bat:	.byte "BAT",0
-_rat:	.byte "RAT",0
-_worm:	.byte "WORM",0
-_snake:	.byte "SNAKE",0
-_orc:	.byte "ORC",0
-_undead:.byte "UNDEAD",0
-_stalke:.byte "STALKER",0
-_slime:	.byte "SLIME",0
-_wizard:.byte "WIZARD",0
-_demon:	.byte "DEMON",0
+_potion:.byte $90,$8f,$94,$89,$8f,$8e,$00						; POTION
+_gem:   .byte $87,$85,$8d,$00								; GEM
+_scroll:.byte $93,$83,$92,$8f,$8c,$8c,$00						; SCROLL
+_ankh:  .byte $81,$8e,$8b,$88,$00							; ANKH
+_gold:  .byte $87,$8f,$8c,$84,$00							; GOLD
+_bat:   .byte $82,$81,$94,$00								; BAT
+_rat:   .byte $92,$81,$94,$00								; RAT
+_worm:  .byte $97,$8f,$92,$8d,$00							; WORM
+_snake: .byte $93,$8e,$81,$8b,$85,$00							; SNAKE
+_orc:   .byte $8f,$92,$83,$00								; ORC
+_undead:.byte $95,$8e,$84,$85,$81,$84,$00						; UNDEAD
+_stalke:.byte $93,$94,$81,$8c,$8b,$85,$92,$00						; STALKER
+_slime: .byte $93,$8c,$89,$8d,$85,$00							; SLIME
+_wizard:.byte $97,$89,$9a,$81,$92,$84,$00						; WIZARD
+_demon: .byte $84,$85,$8d,$8f,$8e,$00							; DEMON
 
 	; name offsets
 nameoff = _nameof-SCR_POTION
