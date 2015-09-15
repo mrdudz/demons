@@ -242,6 +242,7 @@ titles:	jsr rand8			; random text color
 	sta max_hp
 
 	jsr random_level
+	jsr update_hp
 
 	; init status bar
 	ldx #21
@@ -263,7 +264,6 @@ titles:	jsr rand8			; random text color
 	.endif
 
 mainloop:
-	jsr update_hp
 	jsr waitkey
 	jsr update_player
 
@@ -272,6 +272,10 @@ mainloop:
 	bne @skip
 	lda #COLOR_WHITE
 	sta plcolor
+	ldx py
+	ldy px
+	jsr move
+	sta (color_ptr),y
 @skip:
 
 	jsr reveal

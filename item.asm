@@ -40,6 +40,7 @@ use_potion:
 	sta $900f
 	lda max_hp
 	sta hp
+	jsr update_hp
 	ldy #usepot-textbase
 	jmp print_msg		; jsr + rts
 

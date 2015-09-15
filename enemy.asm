@@ -6,6 +6,12 @@ update_enemies:
 	lda plcolor
 	cmp #COLOR_BLUE
 	beq @done		; player is invisible
+	; clear blocked cells array
+	ldx #21
+	lda #0
+@clear:	sta blocked_cells,x
+	dex
+	bpl @clear
 	ldx #2			; X = row
 @yloop:	ldy #1			; Y = column
 @xloop: jsr move
