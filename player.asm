@@ -48,7 +48,7 @@ update_player:
 @down:	inx
 	bne @move		; always branches
 @left:	dey
-	jmp @move		; can't use bne here, in case player is on left edge of map
+	bpl @move		; can't use bne here, in case player is on left edge of map
 @right:	iny
 
 @move:	; X,Y = move target
@@ -95,8 +95,8 @@ pickup_item:
 	bne @notgp
 	; gold found
 	lda #SCORE_GOLD
-	jsr add_score
-	jmp @skip
+	jsr add_score			; always clears carry
+	bcc @skip			; always branches
 @notgp:	tax
 	lda mul3-SCR_POTION,x
 	tax				; X = item type * 3
@@ -110,7 +110,7 @@ pickup_item:
 	tay
 	pla
 	tax
-	jmp movepl
+	bne movepl			; always branches
 
 	;*****************************************************************
 	; player attack, in: X,Y = target coordinates

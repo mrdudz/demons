@@ -401,7 +401,6 @@ random_level:
 	sta walker_dy		; dy' = -dx
 	pla
 	sta walker_dx		; dx' = dy
-
 	jmp @loop
 	;
 	;
@@ -566,13 +565,8 @@ init_items:
 
 	lda #DEMON_HP	; init demon hp
 	sta demon_hp
-
-	jmp reveal	; jsr reveal + rts
-
-drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
-
-drbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
-drbits_end: 
+	;
+	;
 
 	;*****************************************************************
 	; reveal area
@@ -894,7 +888,7 @@ damres:	jsr resume_music
 	pla			; restore char
 	sta (line_ptr),y	
 	lda #0			; reset flood counter
-	sta msg_time
+	sta msg_time		; NOTE: enemy_attack assumes that Z=1 when returning from this routine!
 	rts
 
 miss_flash:
@@ -1153,6 +1147,13 @@ spawns:	.byte SCR_BAT,SCR_RAT,SCR_RAT,SCR_RAT,SCR_BAT,SCR_WORM,SCR_SNAKE
 	.byte SCR_RAT,SCR_SNAKE,SCR_SNAKE,SCR_BAT,SCR_RAT,SCR_UNDEAD,SCR_UNDEAD
 	.byte SCR_ORC,SCR_ORC,SCR_UNDEAD,SCR_STALKER,SCR_UNDEAD,SCR_STALKER,SCR_SNAKE
 	.byte SCR_ORC,SCR_SLIME,SCR_WIZARD,SCR_WIZARD
+
+	; dirs for check walls
+drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
+
+	; wall bits for door placement
+drbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
+drbits_end: 
 
 	.segment "CHARS"
 

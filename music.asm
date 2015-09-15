@@ -113,7 +113,7 @@ dochan:	; in: A = pattern
 	lsr
 	lsr
 	lsr
-	jmp @high
+	bmi @high		; always branches
 @low:	and #$0f
 @high:	tay
 	lda notelut,y

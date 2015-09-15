@@ -99,7 +99,7 @@ enemy_attack:
 	ldy px
 	jsr move
 	jsr miss_flash
-	jmp @end
+	beq @end		; always branches (assumes that miss_flash sets Z=1)
 @hit:	; hit
 	ldy #monhit-textbase
 	jsr print_msg
