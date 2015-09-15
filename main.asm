@@ -279,20 +279,47 @@ mainloop:
 @skip:
 
 	jsr reveal
-	jsr update_enemies
-
-	; test check walls
-	.if 0
-	ldy px
-	ldx py
-	jsr move
-	jsr check_walls
-	ldy #0
-	ldx #1
-	jsr move
-	jsr print_hex
-	.endif
-
+	;
+	;
+update_enemies:
+	lda plcolor
+	cmp #COLOR_BLUE
+	beq @done		; player is invisible
+	; clear blocked cells array
+	ldx #21
+	lda #0
+@clear:	sta blocked_cells,x
+	dex
+	bpl @clear
+	ldx #2			; X = row
+@yloop:	ldy #1			; Y = column
+@xloop: jsr move
+	lda (line_ptr),y
+	cmp #SCR_BAT
+	bmi @skip		; skip non-enemy cells
+	sta cur_name		; store monster
+	stx mon_y
+	sty mon_x
+	lda (color_ptr),y
+	and #7
+	sta mon_color
+	cmp #COLOR_UNSEEN	; skip unseen cells
+	beq @skip
+	lda blocked_cells,y
+	beq @skipb		; skip monsters in 'blocked' cells
+	; monster is in a blocked cell (downward movement) -> unblock cell and skip update
+	lda #0
+	sta blocked_cells,y
+	beq @skip		; always branches
+@skipb:	jsr move_towards
+@skip:	iny
+	cpy #21
+	bne @xloop
+	inx			; next row
+	cpx #21
+	bne @yloop
+@done:	
+	
 	inc turn
 	jmp mainloop
 
@@ -348,7 +375,7 @@ random_level:
 	adc walker_dy		; y = y + dy
 	tay
 	inc $0			; counter++
-	beq @done		; done when counter ovewflows
+	beq init_doors		; done when counter ovewflows
 
 	; turn at edge
 	cpx #2
@@ -376,8 +403,75 @@ random_level:
 	sta walker_dx		; dx' = dy
 
 	jmp @loop
+	;
+	;
+init_doors:
+	; traverse the level and check walls at each floor cell
+	ldx #20 		; X = row
+@yloop:	ldy #20 		; Y = column
+@xloop:	jsr move		; move cursor
+	tya			; save Y
+	pha
+	lda (line_ptr),y
+	cmp #SCR_FLOOR
+	bne @skip
 
-@done:	jsr init_doors
+	; compute bitmask encoding the walls of eight adjacent cells at cursor pos (bit on = wall, bit off = floor)
+	lda #0
+	sta $0			; $0 = result bitmask
+	tay			; Y = 0
+@loop:	; move cursor
+	lda drdirs,y
+	beq @done
+	iny
+	jsr CHROUT
+	asl $0			; shift left bitmask
+	; read screen code under cursor
+	tya			; save y
+	pha
+	ldy cursor_x
+	lda (line_ptr),y
+	cmp #SCR_FLOOR
+	beq @floor
+	; obstacle found, set bit
+	inc $0
+@floor: pla			; restore y
+	tay
+	bne @loop		; always branches
+@done:	; restore cursor
+	lda #CHR_RIGHT
+	jsr CHROUT
+	lda #CHR_DOWN
+	jsr CHROUT
+	lda $0			; bitmask to A
+
+	; check if bits match with a possible door location
+	ldy #0
+@chk:	cmp drbits,y
+	beq @door
+	iny
+	cpy #drbits_end-drbits
+	bne @chk
+	beq @skip		; always branches
+@door:	; choose door type
+	ldy #SCR_DOOR		; place normal door by default
+	lda dungeon_level
+	cmp #STALKER_LEVEL
+	beq @sdoor		; all doors are secret on stalker level
+	bmi @pr			; no secret door before stalker level
+	jsr rand8		; small chance of placing secret doors after stalker level
+	cmp #0
+	bne @pr
+@sdoor:	ldy #SCR_SECRET_DOOR	; place secret door
+@pr:	tya
+	ldy cursor_x
+	jsr plot
+@skip:  pla			; restore Y
+	tay	
+	dey
+	bne @xloop
+	dex
+	bne @yloop
 	;
 	;
 init_player:
@@ -475,83 +569,10 @@ init_items:
 
 	jmp reveal	; jsr reveal + rts
 
-	;*****************************************************************
-	; initialize doors
-	;*****************************************************************
+drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
 
-init_doors:
-	; traverse the level and check walls at each floor cell
-	ldx #20 		; X = row
-@yloop:	ldy #20 		; Y = column
-@xloop:	jsr move		; move cursor
-	tya			; save Y
-	pha
-	lda (line_ptr),y
-	cmp #SCR_FLOOR
-	bne @skip
-
-	; compute bitmask encoding the walls of eight adjacent cells at cursor pos (bit on = wall, bit off = floor)
-	lda #0
-	sta $0			; $0 = result bitmask
-	tay			; Y = 0
-@loop:	; move cursor
-	lda @dirs,y
-	beq @done
-	iny
-	jsr CHROUT
-	asl $0			; shift left bitmask
-	; read screen code under cursor
-	tya			; save y
-	pha
-	ldy cursor_x
-	lda (line_ptr),y
-	cmp #SCR_FLOOR
-	beq @floor
-	; obstacle found, set bit
-	inc $0
-@floor: pla			; restore y
-	tay
-	bne @loop		; always branches
-@done:	; restore cursor
-	lda #CHR_RIGHT
-	jsr CHROUT
-	lda #CHR_DOWN
-	jsr CHROUT
-	lda $0			; bitmask to A
-
-	; check if bits match with a possible door location
-	ldy #0
-@chk:	cmp @dbits,y
-	beq @door
-	iny
-	cpy #@dbits_end-@dbits
-	bne @chk
-	beq @skip		; always branches
-@door:	; choose door type
-	ldy #SCR_DOOR		; place normal door by default
-	lda dungeon_level
-	cmp #STALKER_LEVEL
-	beq @sdoor		; all doors are secret on stalker level
-	bmi @pr			; no secret door before stalker level
-	jsr rand8		; small chance of placing secret doors after stalker level
-	cmp #0
-	bne @pr
-@sdoor:	ldy #SCR_SECRET_DOOR	; place secret door
-@pr:	tya
-	ldy cursor_x
-	jsr plot
-@skip:  pla			; restore Y
-	tay	
-	dey
-	bne @xloop
-	dex
-	bne @yloop
-	rts
-
-@dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
-
-@dbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
-@dbits_end: 
+drbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
+drbits_end: 
 
 	;*****************************************************************
 	; reveal area

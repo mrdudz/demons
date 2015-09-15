@@ -1,47 +1,4 @@
 	;*****************************************************************
-	; update enemies
-	;*****************************************************************
-
-update_enemies:
-	lda plcolor
-	cmp #COLOR_BLUE
-	beq @done		; player is invisible
-	; clear blocked cells array
-	ldx #21
-	lda #0
-@clear:	sta blocked_cells,x
-	dex
-	bpl @clear
-	ldx #2			; X = row
-@yloop:	ldy #1			; Y = column
-@xloop: jsr move
-	lda (line_ptr),y
-	cmp #SCR_BAT
-	bmi @skip		; skip non-enemy cells
-	sta cur_name		; store monster
-	stx mon_y
-	sty mon_x
-	lda (color_ptr),y
-	and #7
-	sta mon_color
-	cmp #COLOR_UNSEEN	; skip unseen cells
-	beq @skip
-	lda blocked_cells,y
-	beq @skipb		; skip monsters in 'blocked' cells
-	; monster is in a blocked cell (downward movement) -> unblock cell and skip update
-	lda #0
-	sta blocked_cells,y
-	beq @skip		; always branches
-@skipb:	jsr move_towards
-@skip:	iny
-	cpy #21
-	bne @xloop
-	inx			; next row
-	cpx #21
-	bne @yloop
-@done:	rts
-
-	;*****************************************************************
 	; moves enemy towards player, in: X,Y = current position
 	;*****************************************************************
 
