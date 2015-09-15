@@ -162,6 +162,9 @@ player_attack:
 	lda #SCR_FLOOR
 	jsr plot
 	; drop loot
+	lda cur_name
+	cmp #SCR_SLIME
+	beq @noloot			; slimes never drop loot
 	jsr rand8
 	cmp #LOOT_DROP
 	bcs @noloot

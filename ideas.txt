@@ -16,8 +16,6 @@ the next arch druid.
 Good luck!
 
 TODO:
-- yellow slimes
-- slime splitting
 - consider to change so that only green enemies can be wounded?
 - demon hp = dungeon level/2 ?
 - ranged attack for wizards?

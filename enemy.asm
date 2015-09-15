@@ -1,10 +1,13 @@
 	;*****************************************************************
-	; moves enemy towards player, in: X,Y = current position
+	; update enemy, in: X,Y = current position
 	;*****************************************************************
 
-move_towards:
+update_enemy:
+	lda cur_name
+	cmp #SCR_SLIME
+	beq @slime_update
 	; move up
-	cpx py			
+@update:cpx py			
 	bmi @skip1
 	beq @skip1
 	ldx #0			
@@ -39,6 +42,17 @@ move_towards:
 	jsr move_enemy
 @done:	rts
 
+@slime_update:			; slimes move randomly
+	jsr rand8
+	and #7
+	cmp #6
+	bpl @update
+	cmp #4
+	bpl @done
+	tax
+	;
+	;
+
 	;*****************************************************************
 	; moves enemy at cursor towards a direction, in:
 	; X = direction (0=up, 1=right, 2=down, 3=left)
@@ -61,10 +75,12 @@ move_enemy:
 	cmp #COLOR_UNSEEN
 	beq @block		; can't move to unseen cells
 	; draw monster to new cell
-	lda cur_name
-	sta (line_ptr),y
 	lda mon_color
 	sta (color_ptr),y
+	lda cur_name
+	sta (line_ptr),y
+	cmp #SCR_SLIME
+	beq @skip
 	; clear monster from old cell
 	ldx mon_y
 	ldy mon_x
@@ -73,7 +89,7 @@ move_enemy:
 	sta (line_ptr),y
 	lda #COLOR_EXPLORED
 	sta (color_ptr),y
-	clc			; success => clear carry
+@skip:	clc			; success => clear carry
 	rts
 
 @block: ldy mon_x		; move cursor back

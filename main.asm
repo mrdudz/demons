@@ -311,7 +311,7 @@ update_enemies:
 	lda #0
 	sta blocked_cells,y
 	beq @skip		; always branches
-@skipb:	jsr move_towards
+@skipb:	jsr update_enemy
 @skip:	iny
 	cpy #21
 	bne @xloop
@@ -1138,7 +1138,7 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_GREEN			; o orc
 	.byte COLOR_WHITE			; z undead
 	.byte COLOR_WHITE			;   stalker
-	.byte COLOR_GREEN			; S slime
+	.byte COLOR_YELLOW			; S slime
 	.byte COLOR_PURPLE			; @ wizard
 	.byte COLOR_PURPLE			; D demon
 
