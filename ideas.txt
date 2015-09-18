@@ -23,7 +23,6 @@ TODO:
 - check that init stairs does not get stuck in infinite loop
 - flashing color effect to the end screen ankh (maybe change # char to something else too?)
 - different explored color for special levels (green/red/blue)
-- improve monster selection, especially for special levels
 - poisoned condition (snakes)
 - print level numbers when descending and leveling up
 - RNG is terrible, same levels can repeat during a play session (only 256 different levels)

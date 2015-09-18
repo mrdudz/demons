@@ -11,7 +11,7 @@ COLOR_RAM	= $9600
 INITIAL_HP	= 6
 PLAYER_ACCURACY	= 140
 ENEMY_ACCURACY	= 80
-LOOT_DROP	= 40
+LOOT_DROP	= 50
 INVISIBLE_TIME	= 45
 DEMON_HP	= 3
 SCORE_MONSTER	= 1
@@ -22,7 +22,7 @@ DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
 ; special levels
-STALKER_LEVEL	= 6
+STALKER_LEVEL	= 10
 FINAL_LEVEL	= 18
 
 ; kernal routines
@@ -133,6 +133,8 @@ song_pos	= $28
 note_mask	= $29		; temp for music routine
 mute_music	= $2a
 text_color	= $2b		; text color for print
+min_spawn	= $2c		; init enemies
+max_spawn	= $2d
 line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 cursor_x	= $d3
 cursor_y	= $d6
@@ -331,9 +333,7 @@ update_enemies:
 	.include "player.asm"
 	.include "enemy.asm"
 	.include "item.asm"
-	.if MUSIC
 	.include "music.asm"
-	.endif
 
 	;*****************************************************************
 	; random level generator
@@ -509,13 +509,27 @@ init_enemies:
 	clc
 	adc #4
 	sta $0			; $0 = spawn count = level/2 + 4
+	lda dungeon_level
+	tax
+	dex
+	lda spawns,x
+	tax
+	and #$f
+	sta max_spawn
+	txa
+	lsr
+	lsr
+	lsr
+	lsr
+	sta min_spawn
 @loop:	jsr rand8
-	and #7
+	and #15
+	cmp min_spawn
+	bmi @loop
+	cmp max_spawn
+	bpl @loop
 	clc
-	adc dungeon_level
-	tay
-	dey			; Y = rand8 & 7 + level - 1
-	lda spawns,y
+	adc #SCR_BAT
 	pha
 	jsr randomloc
 	pla
@@ -1147,11 +1161,25 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_PURPLE			; @ wizard
 	.byte COLOR_PURPLE			; D demon
 
-	; random spawns, indexed with rand8() & 7 + level - 1
-spawns:	.byte SCR_BAT,SCR_RAT,SCR_RAT,SCR_RAT,SCR_BAT,SCR_WORM,SCR_SNAKE
-	.byte SCR_RAT,SCR_SNAKE,SCR_SNAKE,SCR_BAT,SCR_RAT,SCR_UNDEAD,SCR_UNDEAD
-	.byte SCR_ORC,SCR_ORC,SCR_UNDEAD,SCR_STALKER,SCR_UNDEAD,SCR_STALKER,SCR_SNAKE
-	.byte SCR_ORC,SCR_SLIME,SCR_WIZARD,SCR_WIZARD
+	; random spawns, min and max monster index for each dungeon level (max is exclusive!)
+spawns:	.byte $02+1	; 1
+	.byte $02+1	; 2 
+	.byte $03+1	; 3
+	.byte $04+1	; 5
+	.byte $04+1	; 4
+	.byte $22+1	; 6
+	.byte $05+1	; 7
+	.byte $44+1	; 8
+	.byte $35+1	; 9
+	.byte $66+1	; 10
+	.byte $26+1	; 11
+	.byte $55+1	; 12
+	.byte $11+1	; 13
+	.byte $07+1	; 14
+	.byte $28+1	; 15
+	.byte $77+1	; 16
+	.byte $38+1	; 17
+	.byte $88+1	; 18
 
 	; dirs for check walls
 drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
