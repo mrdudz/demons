@@ -9,7 +9,7 @@ COLOR_RAM	= $9600
 
 ; constants
 INITIAL_HP	= 6
-PLAYER_ACCURACY	= 140
+PLAYER_ACCURACY	= 200
 ENEMY_ACCURACY	= 80
 LOOT_DROP	= 50
 INVISIBLE_TIME	= 45
@@ -578,10 +578,25 @@ init_items:
 	bne @floop
 	.endif
 
-	lda #DEMON_HP	; init demon hp
+	lda #DEMON_HP		; init demon hp
 	sta demon_hp
 	;
 	;
+init_theme:
+	ldx dungeon_level	; init level theme
+	dex
+	lda themes,x
+	tay
+	lsr
+	lsr
+	lsr
+	lsr
+	sta wlcolor		; wall color
+	sta drcolor		; door color
+	sta sdcolor		; secret door color
+	tya
+	and #7
+	sta flcolor
 
 	;*****************************************************************
 	; reveal area
@@ -1139,10 +1154,11 @@ _nameof:.byte _potion-names
 	.byte _demon-names
 
 colors = _colors-SCR_WALL
-_colors:.byte COLOR_CYAN			; # wall
+_colors:
+wlcolor:.byte COLOR_CYAN			; # wall
 flcolor:.byte COLOR_CYAN			; . floor
-	.byte COLOR_CYAN			; + door
-	.byte COLOR_CYAN			; (secret door)
+drcolor:.byte COLOR_CYAN			; + door
+sdcolor:.byte COLOR_CYAN			; (secret door)
 	.byte COLOR_WHITE			; > stairs
 plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_RED				; ! potion
@@ -1167,19 +1183,19 @@ spawns:	.byte $02+1	; 1
 	.byte $03+1	; 3
 	.byte $04+1	; 5
 	.byte $04+1	; 4
-	.byte $22+1	; 6
+	.byte $22+1	; 6 worms & demon
 	.byte $05+1	; 7
 	.byte $44+1	; 8
 	.byte $35+1	; 9
 	.byte $66+1	; 10
 	.byte $26+1	; 11
-	.byte $55+1	; 12
+	.byte $55+1	; 12 undeads & demon
 	.byte $11+1	; 13
 	.byte $07+1	; 14
 	.byte $28+1	; 15
 	.byte $77+1	; 16
 	.byte $38+1	; 17
-	.byte $88+1	; 18
+	.byte $88+1	; 18 wizards & demon
 
 	; dirs for check walls
 drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
@@ -1187,6 +1203,25 @@ drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP
 	; wall bits for door placement
 drbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
 drbits_end: 
+
+themes:	.byte $33		; 0=black, 1=white, 2=red, 3=cyan, 4=purple, 5=green, 6=blue, 7=yellow
+	.byte $33
+	.byte $33
+	.byte $33
+	.byte $33
+	.byte $11		; worms & demon
+	.byte $33
+	.byte $33		; orc level
+	.byte $33
+	.byte $33		; stalker level
+	.byte $33
+	.byte $61		; undeads & demon
+	.byte $33
+	.byte $33
+	.byte $33
+	.byte $57		; slimes
+	.byte $33
+	.byte $41		; wizards & demon
 
 	.segment "CHARS"
 

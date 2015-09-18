@@ -143,6 +143,9 @@ player_attack:
 	ldx mon_y			; restore X,Y
 	ldy mon_x
 	jsr damage_flash
+	jsr rand8
+	cmp #$80
+	bpl @done2			; 50% chance of not doing damage
 	jsr rand8			; 50% chance of skipping wounded state
 	cmp #$80
 	bpl @nwound
