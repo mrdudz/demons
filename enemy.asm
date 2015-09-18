@@ -5,11 +5,11 @@
 update_enemy:
 	lda cur_name
 	cmp #SCR_SLIME
-	beq @slime_update
+	beq slime_update
 	cmp #SCR_WIZARD
-	beq @wiz_update
+	beq wiz_update
 	; move up
-@update:cpx py			
+monupd:	cpx py			
 	bmi @skip1
 	beq @skip1
 	ldx #0			
@@ -44,7 +44,11 @@ update_enemy:
 	jsr move_enemy
 @done:	rts
 
-@wiz_update:			; try to shoot in random direction
+	;*****************************************************************
+	; wizard update
+	;*****************************************************************
+
+wiz_update:			; try to shoot in random direction
 	lda #WIZARD_TRIGGER
 	sta shoot_counter
 @tloop:	jsr movemon
@@ -67,20 +71,33 @@ update_enemy:
 @fail:	jsr movemon
 	dec shoot_counter
 	bne @tloop
-	jmp @update		; TODO: always branch
+	beq monupd		; always branch
 
 @shoot:	jsr movemon
 	ldx shoot_dir
 	jsr shoot
-	jmp movemon		; jsr + rts
+	;
+	;
 
-@slime_update:			; slimes move randomly
+	;*****************************************************************
+	; move cursor to current monster position
+	;*****************************************************************
+
+movemon:ldy mon_x
+	ldx mon_y
+	jmp move
+
+	;*****************************************************************
+	; slime update
+	;*****************************************************************
+
+slime_update:			; slimes move randomly
 	jsr rand8
 	and #7
 	cmp #6
-	bpl @update
+	bpl monupd		; -> move
 	cmp #4
-	bpl @done
+	bpl rts4
 	tax
 	;
 	;
@@ -122,7 +139,7 @@ move_enemy:
 
 @block: jsr movemon		; move cursor back
 	sec			; blocked => set carry
-	rts
+rts4:	rts
 
 	;*****************************************************************
 	; enemy attacks player
@@ -151,14 +168,6 @@ enemy_attack:
 @end:	jsr movemon		; restore X,Y
 	clc			; success => clear carry
 rts3:	rts
-
-	;*****************************************************************
-	; move cursor to current monster position
-	;*****************************************************************
-
-movemon:ldy mon_x
-	ldx mon_y
-	jmp move
 
 	;*****************************************************************
 	; shoot projectile
