@@ -8,7 +8,7 @@ SCREEN 		= $1e00
 COLOR_RAM	= $9600
 
 ; constants
-START_LEVEL	= 1
+START_LEVEL	= 0
 INITIAL_HP	= 6
 PLAYER_ACCURACY	= 200
 ENEMY_ACCURACY	= 80
@@ -24,7 +24,10 @@ DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
 ; special levels
-STALKER_LEVEL	= 10
+DEMON_LEVEL1	= 5
+STALKER_LEVEL	= 9
+DEMON_LEVEL2	= 11
+FINAL_LEVEL	= 17
 
 ; kernal routines
 PRINT_INT	= $ddcd		; print 16-bit integer in X/A (undocumented basic routine)
@@ -249,8 +252,10 @@ titles:	jsr rand8			; random text color
 
 	; init game vars
 	inc player_level
+	.if START_LEVEL
 	lda #START_LEVEL
 	sta dungeon_level
+	.endif
 	lda #INITIAL_HP
 	sta hp
 	sta max_hp
@@ -513,11 +518,11 @@ init_stairs:
 	bmi init_stairs
 @ok:	; replace stairs with demon on special levels
 	lda dungeon_level
-	cmp #6
+	cmp #DEMON_LEVEL1
 	beq @demon
-	cmp #12
+	cmp #DEMON_LEVEL2
 	beq @demon
-	cmp #18
+	cmp #FINAL_LEVEL
 	beq @demon
 	lda #SCR_STAIRS
 	bne @plot		; always branches
@@ -533,7 +538,6 @@ init_enemies:
 	sta $0			; $0 = spawn count = level/2 + 4
 	lda dungeon_level
 	tax
-	dex
 	lda spawns,x
 	tax
 	and #$f
@@ -606,7 +610,6 @@ init_items:
 	;
 init_theme:
 	ldx dungeon_level	; init level theme
-	dex
 	lda themes,x
 	tay
 	lsr

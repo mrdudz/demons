@@ -191,7 +191,7 @@ player_attack:
 	bne @ndemon
 	inc demons_killed
 	lda dungeon_level		; no stairs on 18th level
-	cmp #18
+	cmp #FINAL_LEVEL
 	beq @nstair			
 	ldy mon_x			; place stairs
 	jsr move
