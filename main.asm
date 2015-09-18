@@ -198,9 +198,15 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	dex
 	bpl @zp
 
+	; clear screen
 	lda #CHR_CLR_HOME		; clear screen
 	jsr CHROUT
-	jsr clearscreen
+	ldx #0
+@clear:	lda #SCR_SPACE
+	sta SCREEN,x
+	sta SCREEN+256,x
+	inx
+	bne @clear
 
 	.if MUSIC
 	lda #15				; set music volume
@@ -346,7 +352,16 @@ update_enemies:
 	;*****************************************************************
 
 random_level:
-	jsr clearscreen
+	; clear map area
+	ldx #0
+@clear:	lda #SCR_WALL
+	sta SCREEN+22,x
+	sta SCREEN+228,x
+	lda #COLOR_UNSEEN
+	sta COLOR_RAM+22,x
+	sta COLOR_RAM+228,x
+	inx
+	bne @clear
 
 	lda #COLOR_UNSEEN
 	sta cur_color
@@ -1008,24 +1023,6 @@ update_hp:
 	dex
 	bne @loop2
 @nohp:	rts
-
-	;*****************************************************************
-	; clears the screen
-	;*****************************************************************
-
-clearscreen:
-	; screen is 22*23 = 506 bytes long
-	; to save bytes we clear two full pages (512 bytes)
-	ldx #0
-@loop:	lda #SCR_WALL
-	sta SCREEN+22,x		; dont clear first line
-	sta SCREEN+228,x	; dont clear last line
-	lda #COLOR_UNSEEN
-	sta COLOR_RAM+22,x
-	sta COLOR_RAM+228,x
-	inx
-	bne @loop
-	rts
 
 	;*****************************************************************
 	; short delay about half a second, trashes: A

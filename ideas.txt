@@ -1,5 +1,4 @@
 TODO:
-- BUG: trash at top & bottom of screen (screen ram contains $20, should be $80)
 - demon hp = dungeon level/2 ?
 - OPT: try to remove end of line and end of basic program zero bytes (would save 2 bytes)
 - check that init stairs does not get stuck in infinite loop
