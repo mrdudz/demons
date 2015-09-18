@@ -77,9 +77,11 @@ SCR_DEMON	= 21 + 42
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
 SCR_DAMAGE	= 42 + $80
-SCR_MISS_H	= 45 + $80
-SCR_MISS_V	= 93 + $80
+SCR_MISS_X	= 45 + $80
+SCR_MISS_Y	= 93 + $80
 SCR_HEART	= 83 + $80
+SCR_PROJ_X	= 45 + $80
+SCR_PROJ_Y	= 93 + $80
 
 ; color codes
 COLOR_BLACK	= 0
@@ -135,6 +137,10 @@ mute_music	= $2a
 text_color	= $2b		; text color for print
 min_spawn	= $2c		; init enemies
 max_spawn	= $2d
+shoot_x		= $2e		; shoot origin
+shoot_y		= $2f
+shoot_dir	= $30
+shoot_char	= $31
 line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 cursor_x	= $d3
 cursor_y	= $d6
@@ -797,6 +803,18 @@ move:	pha		; store A,X,Y
 	rts
 
 	;*****************************************************************
+	; move cursor in direction X (0=up, 1=right, 2=down, 3=left)
+	;*****************************************************************
+
+movedir:lda @dirs,x
+	jsr CHROUT
+	ldx cursor_y
+	ldy cursor_x
+	jmp move	; jsr + rts
+
+@dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_LEFT
+
+	;*****************************************************************
 	; plots a character in A at row X, column Y
 	;*****************************************************************
 
@@ -933,9 +951,9 @@ miss_flash:
 	lda px
 	cmp mon_x
 	beq @ver
-	lda #SCR_MISS_H
+	lda #SCR_MISS_X
 	bne @hor		; always branch
-@ver:	lda #SCR_MISS_V
+@ver:	lda #SCR_MISS_Y
 @hor:	sta (line_ptr),y
 	lda #COLOR_WHITE
 	sta (color_ptr),y
@@ -1098,7 +1116,7 @@ add_score:
 	;*****************************************************************
 
 	; title texts
-title:	.byte SCR_ANKH,$20,$84,$85,$8d,$8f,$8e,$93,$a0,$8f,$86,$a0,$84,$85,$98,$20,SCR_ANKH,$00	; DEMONS OF DEX
+title:	.byte SCR_ANKH,$a0,$84,$85,$8d,$8f,$8e,$93,$a0,$8f,$86,$a0,$84,$85,$98,$a0,SCR_ANKH,$00	; DEMONS OF DEX
 creds1: .byte $83,$8f,$84,$85,$ba,$a0,$a0,$90,$85,$94,$92,$89,$a0,$88,$81,$8b,$8b,$89,$8e,$85,$8e,$00
 creds2: .byte $8d,$95,$93,$89,$83,$ba,$a0,$8d,$89,$8b,$8b,$8f,$a0,$8b,$81,$8c,$8c,$89,$8e,$85,$8e,$00
 

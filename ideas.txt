@@ -1,23 +1,6 @@
-Demons of Dex
-A roguelike for the unexpanded VIC-20
-Copyright (C) 2015 Petri Häkkinen
-
-You are Eino, a member of the druids.
-Your master, the arch druid has become
-old and it is time for somebody to replace
-him. As a young initiate you are sent to
-dungeon Dex, a mysterious labyrinth and
-a home to vile creatures. You must enter
-the dungeon alone and defeat three demon
-lords within. Only then can you achieve
-true enlightenment and ascend to become
-the next arch druid.
-
-Good luck!
-
 TODO:
+- BUG: trash at top & bottom of screen (screen ram contains $20, should be $80)
 - demon hp = dungeon level/2 ?
-- ranged attack for wizards?
 - OPT: try to remove end of line and end of basic program zero bytes (would save 2 bytes)
 - check that init stairs does not get stuck in infinite loop
 - flashing color effect to the end screen ankh (maybe change # char to something else too?)

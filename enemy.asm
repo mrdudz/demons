@@ -6,6 +6,8 @@ update_enemy:
 	lda cur_name
 	cmp #SCR_SLIME
 	beq @slime_update
+	cmp #SCR_WIZARD
+	beq @wiz_update
 	; move up
 @update:cpx py			
 	bmi @skip1
@@ -42,6 +44,37 @@ update_enemy:
 	jsr move_enemy
 @done:	rts
 
+@wiz_update:			; try to shoot in random direction
+	jsr rand8
+	and #3
+	sta shoot_dir
+@loop:	ldx shoot_dir
+	jsr movedir
+	lda (color_ptr),y
+	and #7
+	.if COLOR_UNSEEN
+	cmp #COLOR_UNSEEN
+	.endif
+	beq @fail		; unseen cell -> can't shoot
+	lda (line_ptr),y
+	cmp #SCR_PLAYER
+	beq @shoot
+	cmp #SCR_FLOOR
+	beq @loop
+@fail:	ldy mon_x		; restore cursor
+	ldx mon_y
+	jsr move
+	jmp @update		; TODO: always branch
+
+@shoot:	ldy mon_x		; restore cursor
+	ldx mon_y
+	jsr move
+	ldx shoot_dir
+	jsr shoot
+	ldy mon_x		; restore cursor
+	ldx mon_y
+	jmp move		; jsr + rts
+
 @slime_update:			; slimes move randomly
 	jsr rand8
 	and #7
@@ -60,11 +93,7 @@ update_enemy:
 
 move_enemy:
 	; check obstacles
-	lda @dirs,x		; move cursor to target cell
-	jsr CHROUT
-	ldx cursor_y
-	ldy cursor_x
-	jsr move
+	jsr movedir
 	lda (line_ptr),y
 	cmp #SCR_PLAYER
 	beq enemy_attack
@@ -100,8 +129,6 @@ move_enemy:
 	sec			; blocked => set carry
 	rts
 
-@dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_LEFT
-
 	;*****************************************************************
 	; enemy attacks player
 	;*****************************************************************
@@ -129,4 +156,66 @@ enemy_attack:
 @end:	ldx mon_y		; restore X,Y
 	ldy mon_x
 	clc			; success => clear carry
-	rts
+rts3:	rts
+
+	;*****************************************************************
+	; shoot projectile
+	; X = direction (0=up, 1=right, 2=down, 3=left)
+	;*****************************************************************
+
+shoot:	stx shoot_dir
+	lda projch,x
+	sta shoot_char
+	lda cursor_x
+	sta shoot_x
+	lda cursor_y
+	sta shoot_y
+@loop:	ldx shoot_dir
+	jsr movedir
+	lda (line_ptr),y		; check obstacle
+	;cmp #SCR_BAT
+	;bpl @hitenemy
+	cmp #SCR_PLAYER
+	beq @hitplayer
+	cmp #SCR_FLOOR
+	bne @block
+	lda (color_ptr),y
+	and #7
+	.if COLOR_UNSEEN
+	cmp #COLOR_UNSEEN
+	.endif
+	beq @block
+	lda shoot_char
+	sta (line_ptr),y
+	lda #COLOR_WHITE
+	sta (color_ptr),y
+	lda #4
+	jsr delay2
+	jmp @loop			; TODO always branch
+@block:	; erase projectile
+	ldy shoot_x
+	ldx shoot_y
+	jsr move
+@loop2:	ldx shoot_dir
+	jsr movedir
+	lda (line_ptr),y		; check obstacle
+	cmp shoot_char
+	bne rts3
+	lda #SCR_FLOOR
+	sta (line_ptr),y
+	lda flcolor
+	sta (color_ptr),y
+	lda #4
+	jsr delay2
+	jmp @loop2			; TODO always branch
+
+; @hitenemy:
+; 	jsr damage_flash
+; 	jmp @block
+
+@hitplayer:
+	jsr damage_flash
+	jsr player_damage
+	jmp @block
+
+projch:	.byte SCR_PROJ_Y,SCR_PROJ_X,SCR_PROJ_Y,SCR_PROJ_X

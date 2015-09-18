@@ -21,15 +21,20 @@ update_player:
 	; store old pos
 	stx $0
 	sty $1
-	cmp #'W' ;CHR_UP
+	cmp #'W'
 	beq @up
-	cmp #'S' ;CHR_DOWN
+	cmp #'S'
 	beq @down
-	cmp #'A' ;CHR_LEFT
+	cmp #'A'
 	beq @left
-	cmp #'D' ;CHR_RIGHT
+	cmp #'D'
 	beq @right
-	cmp #CHR_F1
+	; cmp #'Z'
+	; bne @nshoot
+	; jsr move
+	; ldx #1
+	; jmp shoot
+@nshoot:cmp #CHR_F1
 	bne @skipf1
 	jmp use_potion
 @skipf1:cmp #CHR_F3
