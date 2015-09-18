@@ -45,6 +45,9 @@ update_enemy:
 @done:	rts
 
 @wiz_update:			; try to shoot in random direction
+	lda #WIZARD_TRIGGER
+	sta shoot_counter
+@tloop:	jsr movemon
 	jsr rand8
 	and #3
 	sta shoot_dir
@@ -62,6 +65,8 @@ update_enemy:
 	cmp #SCR_FLOOR
 	beq @loop
 @fail:	jsr movemon
+	dec shoot_counter
+	bne @tloop
 	jmp @update		; TODO: always branch
 
 @shoot:	jsr movemon
@@ -163,10 +168,10 @@ movemon:ldy mon_x
 shoot:	stx shoot_dir
 	lda projch,x
 	sta shoot_char
-	lda cursor_x
-	sta shoot_x
+	lda cursor_x			; store cursor
+	pha
 	lda cursor_y
-	sta shoot_y
+	pha
 @loop:	ldx shoot_dir
 	jsr movedir
 	lda (line_ptr),y		; check obstacle
@@ -188,10 +193,12 @@ shoot:	stx shoot_dir
 	sta (color_ptr),y
 	lda #4
 	jsr delay2
-	jmp @loop			; TODO always branch
+	bcs @loop			; always branch (delay2 always sets carry)
 @block:	; erase projectile
-	ldy shoot_x
-	ldx shoot_y
+	pla				; restore cursor
+	tax
+	pla
+	tay
 	jsr move
 @loop2:	ldx shoot_dir
 	jsr movedir
@@ -204,7 +211,7 @@ shoot:	stx shoot_dir
 	sta (color_ptr),y
 	lda #4
 	jsr delay2
-	jmp @loop2			; TODO always branch
+	bcs @loop2			; always branch (delay2 always sets carry)
 
 ; @hitenemy:
 ; 	jsr damage_flash

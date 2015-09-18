@@ -8,6 +8,7 @@ SCREEN 		= $1e00
 COLOR_RAM	= $9600
 
 ; constants
+START_LEVEL	= 1
 INITIAL_HP	= 6
 PLAYER_ACCURACY	= 200
 ENEMY_ACCURACY	= 80
@@ -18,12 +19,12 @@ SCORE_MONSTER	= 1
 SCORE_GOLD	= 10
 SCORE_DEMON	= 100
 DEFAULT_DELAY	= 25		; default delay value for delay routine in 1/60 seconds
+WIZARD_TRIGGER	= 3		; wizard trigger happiness, higher the value the more often wizards shoot
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
 ; special levels
 STALKER_LEVEL	= 10
-FINAL_LEVEL	= 18
 
 ; kernal routines
 PRINT_INT	= $ddcd		; print 16-bit integer in X/A (undocumented basic routine)
@@ -137,10 +138,9 @@ mute_music	= $2a
 text_color	= $2b		; text color for print
 min_spawn	= $2c		; init enemies
 max_spawn	= $2d
-shoot_x		= $2e		; shoot origin
-shoot_y		= $2f
-shoot_dir	= $30
-shoot_char	= $31
+shoot_dir	= $2e
+shoot_char	= $2f
+shoot_counter	= $30
 line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 cursor_x	= $d3
 cursor_y	= $d6
@@ -249,7 +249,8 @@ titles:	jsr rand8			; random text color
 
 	; init game vars
 	inc player_level
-	inc dungeon_level
+	lda #START_LEVEL
+	sta dungeon_level
 	lda #INITIAL_HP
 	sta hp
 	sta max_hp
