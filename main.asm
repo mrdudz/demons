@@ -939,17 +939,30 @@ miss_flash:
 @hor:	sta (line_ptr),y
 	lda #COLOR_WHITE
 	sta (color_ptr),y
+	; old sound effect
+	; jsr pause_music
+	; lda #225
+	; sta vic_soprano
+	; lda #5
+	; jsr delay2
+	; lda #245
+	; sta vic_soprano
+	; lda #9
+	; jsr resume_music
 	; play sound
 	jsr pause_music
-	lda #225
-	sta vic_soprano
-	lda #5
+	ldx #224
+@sound:	stx vic_alto
+	lda #1
 	jsr delay2
-	lda #245
-	sta vic_soprano
-	lda #9
-	jsr delay2
+	inx
+	inx
+	inx
+	cpx #248
+	bne @sound
 	jsr resume_music
+	lda #7
+	jsr delay2
 	beq damres		; always branch
 
 	;*****************************************************************
