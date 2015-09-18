@@ -193,7 +193,7 @@ use_skull:
 	ldy cursor_x
 	lda #SCR_FLOOR
 	sta (line_ptr),y
-	lda #COLOR_EXPLORED
+	lda flcolor
 	sta (color_ptr),y
 	lda #50
 	jsr delay2

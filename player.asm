@@ -157,7 +157,7 @@ player_attack:
 	lda demon_hp
 	bne @done2
 	; remove enemy
-@killit:lda #COLOR_EXPLORED
+@killit:lda flcolor
 	sta cur_color
 	lda #SCR_FLOOR
 	jsr plot

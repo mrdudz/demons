@@ -91,7 +91,6 @@ COLOR_GREEN	= 5
 COLOR_BLUE	= 6
 COLOR_YELLOW	= 7
 COLOR_UNSEEN	= COLOR_BLACK
-COLOR_EXPLORED	= COLOR_CYAN
 
 ; zero page variables
 ;		= $2
@@ -1121,7 +1120,7 @@ _nameof:.byte _potion-names
 
 colors = _colors-SCR_WALL
 _colors:.byte COLOR_CYAN			; # wall
-	.byte COLOR_CYAN			; . floor
+flcolor:.byte COLOR_CYAN			; . floor
 	.byte COLOR_CYAN			; + door
 	.byte COLOR_CYAN			; (secret door)
 	.byte COLOR_WHITE			; > stairs

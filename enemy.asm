@@ -87,7 +87,7 @@ move_enemy:
 	jsr move
 	lda #SCR_FLOOR
 	sta (line_ptr),y
-	lda #COLOR_EXPLORED
+	lda flcolor
 	sta (color_ptr),y
 @skip:	clc			; success => clear carry
 	rts

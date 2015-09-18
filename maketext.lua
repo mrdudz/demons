@@ -16,7 +16,31 @@ function convert_text(t)
 		line = line..string.rep("\t", tabs).."; "..text
 		print(line)
 	end
+
+	-- count unique chars
+	local chars = {}
+	for i=1,#t,2 do
+		local text = t[i+1]
+		for j=1,#text do
+			local ch = text:sub(j, j)
+			chars[ch] = (chars[ch] or 0) + 1
+		end
+	end
+	local cnt = 0
+	for k,v in pairs(chars) do
+		print(k..": "..v)
+		cnt = cnt + 1
+	end
+	print(cnt.." unique chars.")
 end
+
+convert_text{
+	"title:",	"DEMONS OF DEX",
+	"code:",	"CODE:  PETRI HAKKINEN",
+	"music:",	"MUSIC: MIKKO KALLINEN",
+}
+
+print("---")
 
 convert_text{
 	"descend:",	"DESCENDING",
