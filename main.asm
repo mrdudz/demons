@@ -302,7 +302,9 @@ update_enemies:
 	lda (color_ptr),y
 	and #7
 	sta mon_color
+	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN	; skip unseen cells
+	.endif
 	beq @skip
 	lda blocked_cells,y
 	beq @skipb		; skip monsters in 'blocked' cells
@@ -667,7 +669,9 @@ reveal:	lda #1			; top-right segment
 	tax			; X = screen code to be revealed
 	lda (color_ptr),y
 	and #7
+	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN	; don't touch already seen blocks (preserves monster colors)
+	.endif
 	bne @skip
 	lda colors,x
 	sta (color_ptr),y
@@ -690,7 +694,9 @@ reveal_area:
 	; fetch cell color, stop recursion if cell already revealed
 	lda (color_ptr),y
 	and #7			; color ram is 4-bit wide, high nibble contains garbage
+	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
+	.endif
 	bne @done
 
 	; reveal cell

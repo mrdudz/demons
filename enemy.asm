@@ -72,7 +72,9 @@ move_enemy:
 	bne @block		; blocked
 	lda (color_ptr),y
 	and #7
+	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
+	.endif
 	beq @block		; can't move to unseen cells
 	; draw monster to new cell
 	lda mon_color

@@ -80,7 +80,9 @@ use_gem:
 	jsr move
 @loop:	lda (color_ptr),y
 	and #7
+	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
+	.endif
 	bne @skip
 	lda (line_ptr),y
 	tax
@@ -179,7 +181,9 @@ use_skull:
 	bpl @skip		; demons are immune to skulls
 	lda (color_ptr),y
 	and #7
+	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
+	.endif
 	beq @skip		; skip unseen cells
 	; kill
 	sty cursor_x
