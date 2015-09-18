@@ -61,19 +61,13 @@ update_enemy:
 	beq @shoot
 	cmp #SCR_FLOOR
 	beq @loop
-@fail:	ldy mon_x		; restore cursor
-	ldx mon_y
-	jsr move
+@fail:	jsr movemon
 	jmp @update		; TODO: always branch
 
-@shoot:	ldy mon_x		; restore cursor
-	ldx mon_y
-	jsr move
+@shoot:	jsr movemon
 	ldx shoot_dir
 	jsr shoot
-	ldy mon_x		; restore cursor
-	ldx mon_y
-	jmp move		; jsr + rts
+	jmp movemon		; jsr + rts
 
 @slime_update:			; slimes move randomly
 	jsr rand8
@@ -113,9 +107,7 @@ move_enemy:
 	cmp #SCR_SLIME
 	beq @skip
 	; clear monster from old cell
-	ldx mon_y
-	ldy mon_x
-	jsr move
+	jsr movemon
 	lda #SCR_FLOOR
 	sta (line_ptr),y
 	lda flcolor
@@ -123,9 +115,7 @@ move_enemy:
 @skip:	clc			; success => clear carry
 	rts
 
-@block: ldy mon_x		; move cursor back
-	ldx mon_y
-	jsr move
+@block: jsr movemon		; move cursor back
 	sec			; blocked => set carry
 	rts
 
@@ -153,10 +143,17 @@ enemy_attack:
 	jsr move
 	jsr damage_flash
 	jsr player_damage
-@end:	ldx mon_y		; restore X,Y
-	ldy mon_x
+@end:	jsr movemon		; restore X,Y
 	clc			; success => clear carry
 rts3:	rts
+
+	;*****************************************************************
+	; move cursor to current monster position
+	;*****************************************************************
+
+movemon:ldy mon_x
+	ldx mon_y
+	jmp move
 
 	;*****************************************************************
 	; shoot projectile
