@@ -8,7 +8,6 @@ SCREEN 		= $1e00
 COLOR_RAM	= $9600
 
 ; constants
-START_LEVEL	= 0
 INITIAL_HP	= 6
 PLAYER_ACCURACY	= 200
 ENEMY_ACCURACY	= 80
@@ -20,14 +19,16 @@ SCORE_GOLD	= 10
 SCORE_DEMON	= 100
 DEFAULT_DELAY	= 25		; default delay value for delay routine in 1/60 seconds
 WIZARD_TRIGGER	= 3		; wizard trigger happiness, higher the value the more often wizards shoot
+SECRET_DOOR	= 7		; secret door probability after stalker level
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
-; special levels
-DEMON_LEVEL1	= 5
+; levels
+START_LEVEL	= 0
+DEMON_LEVEL1	= 4
 STALKER_LEVEL	= 9
-DEMON_LEVEL2	= 11
-FINAL_LEVEL	= 17
+DEMON_LEVEL2	= 9
+FINAL_LEVEL	= 14
 
 ; kernal routines
 PRINT_INT	= $ddcd		; print 16-bit integer in X/A (undocumented basic routine)
@@ -75,8 +76,8 @@ SCR_SNAKE	= 15 + 42
 SCR_ORC		= 16 + 42
 SCR_UNDEAD	= 17 + 42
 SCR_STALKER	= 18 + 42
-SCR_SLIME	= 19 + 42
-SCR_WIZARD	= 20 + 42
+SCR_WIZARD	= 19 + 42
+SCR_SLIME	= 20 + 42
 SCR_DEMON	= 21 + 42
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
@@ -523,8 +524,8 @@ init_doors:
 	beq @sdoor		; all doors are secret on stalker level
 	bmi @pr			; no secret door before stalker level
 	jsr rand8		; small chance of placing secret doors after stalker level
-	cmp #0
-	bne @pr
+	cmp #SECRET_DOOR
+	bcs @pr
 @sdoor:	ldy #SCR_SECRET_DOOR	; place secret door
 @pr:	tya
 	ldy cursor_x
@@ -567,13 +568,9 @@ init_stairs:
 	;
 	;
 init_enemies:
-	lda dungeon_level
-	lsr
-	clc
-	adc #4
-	sta $0			; $0 = spawn count = level/2 + 4
-	lda dungeon_level
-	tax
+	ldx dungeon_level
+	lda mcounts,x
+	sta $0			; $0 = spawn count
 	lda spawns,x
 	tax
 	and #$f
@@ -1215,10 +1212,14 @@ charadr:;.word hheart		; half heart
 	.word $8800+15*8	; o orc
 	.word $8800+26*8	; z undead
 	.word $8800+32*8	;   stalker
-	.word $8800+83*8	; S slime
 	.word $8800		; @ wizard
+	.word $8800+83*8	; S slime
 	.word $8800+68*8	; D demon
 charadr_end:
+
+projch:	.byte SCR_PROJ_Y,SCR_PROJ_X,SCR_PROJ_Y,SCR_PROJ_X
+
+mul3:	.byte 0,3,6,9
 
 	.segment "CHARS"
 
@@ -1244,8 +1245,8 @@ _snake: .byte $93,$8e,$81,$8b,$85,$00							; SNAKE
 _orc:   .byte $8f,$92,$83,$00								; ORC
 _undead:.byte $95,$8e,$84,$85,$81,$84,$00						; UNDEAD
 _stalke:.byte $93,$94,$81,$8c,$8b,$85,$92,$00						; STALKER
-_slime: .byte $93,$8c,$89,$8d,$85,$00							; SLIME
 _wizard:.byte $97,$89,$9a,$81,$92,$84,$00						; WIZARD
+_slime: .byte $93,$8c,$89,$8d,$85,$00							; SLIME
 _demon: .byte $84,$85,$8d,$8f,$8e,$00							; DEMON
 
 	; name offsets
@@ -1262,8 +1263,8 @@ _nameof:.byte _potion-names
 	.byte _orc-names
 	.byte _undead-names
 	.byte _stalke-names
-	.byte _slime-names
 	.byte _wizard-names
+	.byte _slime-names
 	.byte _demon-names
 
 colors = _colors-SCR_WALL
@@ -1279,61 +1280,22 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_PURPLE			; ? scroll
 	.byte COLOR_YELLOW			; (ankh)
 	.byte COLOR_YELLOW			; $ gold
-	.byte COLOR_RED				; b bat
-	.byte COLOR_RED				; r rat
-	.byte COLOR_WHITE			; w worm
-	.byte COLOR_GREEN			; s snake
-	.byte COLOR_GREEN			; o orc
-	.byte COLOR_WHITE			; z undead
-	.byte COLOR_WHITE			;   stalker
-	.byte COLOR_YELLOW			; S slime
-	.byte COLOR_PURPLE			; @ wizard
-	.byte COLOR_PURPLE			; D demon
+	.byte COLOR_RED				; b bat		0
+	.byte COLOR_RED				; r rat		1
+	.byte COLOR_WHITE			; w worm	2
+	.byte COLOR_GREEN			; s snake	3
+	.byte COLOR_GREEN			; o orc		4
+	.byte COLOR_WHITE			; z undead	5
+	.byte COLOR_WHITE			;   stalker	6
+	.byte COLOR_PURPLE			; @ wizard	7
+	.byte COLOR_YELLOW			; S slime	8
+	.byte COLOR_PURPLE			; D demon	9
 
-	; random spawns, min and max monster index for each dungeon level (max is exclusive!)
-spawns:	.byte $02+1	; 1
-	.byte $02+1	; 2 
-	.byte $03+1	; 3
-	.byte $04+1	; 5
-	.byte $04+1	; 4
-	.byte $22+1	; 6 worms & demon
-	.byte $05+1	; 7
-	.byte $44+1	; 8
-	.byte $35+1	; 9
-	.byte $66+1	; 10
-	.byte $26+1	; 11
-	.byte $55+1	; 12 undeads & demon
-	.byte $11+1	; 13
-	.byte $07+1	; 14
-	.byte $28+1	; 15
-	.byte $77+1	; 16
-	.byte $38+1	; 17
-	.byte $88+1	; 18 wizards & demon
+	;lvl  0   1   2   3   Dz  5   o   7   8   Ds  r   11  12  S  Dw
+spawns:	.byte $02,$03,$04,$05,$56,$06,$45,$26,$26,$67,$12,$27,$28,$89,$78	; hi=min monster, lo=max monster+1
+mcounts:.byte $03,$04,$05,$05,$06,$06,$06,$07,$07,$07,$0c,$09,$09,$03,$08	; number of monsters
+themes:	.byte $33,$33,$33,$33,$61,$33,$52,$33,$33,$61,$22,$33,$33,$57,$41	; hi=wall color, lo=floor color
 
-themes:	.byte $33		; 0=black, 1=white, 2=red, 3=cyan, 4=purple, 5=green, 6=blue, 7=yellow
-	.byte $33
-	.byte $33
-	.byte $33
-	.byte $33
-	.byte $11		; worms & demon
-	.byte $33
-	.byte $33		; orc level
-	.byte $33
-	.byte $33		; stalker level
-	.byte $33
-	.byte $61		; undeads & demon
-	.byte $33
-	.byte $33
-	.byte $33
-	.byte $57		; slimes
-	.byte $33
-	.byte $41		; wizards & demon
+	; colors: 0=black, 1=white, 2=red, 3=cyan, 4=purple, 5=green, 6=blue, 7=yellow
 
 titlec:	.byte COLOR_RED,COLOR_YELLOW	; title colors
-
-projch:	.byte SCR_PROJ_Y,SCR_PROJ_X,SCR_PROJ_Y,SCR_PROJ_X
-
-mul3:	.byte 0,3,6,9
-
-unused:	.byte $ff		; this byte is unused!
-
