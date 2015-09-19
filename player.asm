@@ -275,6 +275,13 @@ wingame:; clear screen effect
 	dex
 	bne @clear
 	; draw ankh
+	lda #100	; loop counter
+	sta $1
+@loop:	lda $1
+	and #3
+	tax
+	lda ankhc,x
+	sta cur_color
 	ldx #6		; X = row
 @yloop:	ldy #6		; Y = column
 	jsr move	; move cursor to top-left corner on screen
@@ -283,9 +290,9 @@ wingame:; clear screen effect
 @xloop:	lda ankh-6,x
 	and $0
 	beq @skip
-	lda #35+$80
+	lda #SCR_ANKH
 	sta (line_ptr),y
-	lda #COLOR_WHITE
+	lda cur_color
 	sta (color_ptr),y
 @skip:	lda $0
 	lsr
@@ -296,6 +303,10 @@ wingame:; clear screen effect
 	inx
 	cpx #6+8
 	bne @yloop
+	lda #2
+	jsr delay2
+	dec $1
+	bne @loop
 	; you win
 	ldy #youwin-textbase
 	bne gameover	; always branches
