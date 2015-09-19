@@ -326,5 +326,3 @@ gameover:
 	cmp #32
 	bne @loop
 	jmp start
-
-mul3:	.byte 0,3,6,9

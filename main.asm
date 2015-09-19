@@ -149,7 +149,8 @@ cursor_x	= $d3
 cursor_y	= $d6
 
 ; other variables
-; NOTE: unused memory in tape buffer $033c-$03ff
+cassette_buffer = $033c		; $033c-$03ff
+charset		= $1d50		; address of first char in the user defined charset (vic base address is $1c00)
 blocked_cells	= $0100		; 22 byte temp array in stack page for enemy update routine
 cur_color	= $0286		; color for CHROUT
 potions		= SCREEN+492	; item counts are stored in screen ram
@@ -184,6 +185,39 @@ bend:	.word 0           		; end of program
 	;*****************************************************************
 	; main program
 	;*****************************************************************
+
+coldstart:
+	; copy chars segment to cassette buffer
+	ldx #0
+@copy:	lda charset,x			
+	sta cassette_buffer,x
+	inx
+	bne @copy
+
+	; init charset
+	lda #<charset			; $2-$3 = dest pointer in chars segments
+	sta $2
+	lda #>charset
+	sta $3
+	ldx #0
+@cloop: lda charadr,x			; $0-$1 = src pointer in char ROM
+	sta $0
+	lda charadr+1,x
+	sta $1
+	ldy #7				; copy char data
+@chars: lda ($0),y			
+	sta ($2),y
+	dey
+	bpl @chars
+	inx				; next char
+	inx
+	lda $2
+	adc #8				; carry is always zero here
+	sta $2
+@skip:	cpx #charadr_end-charadr
+	bne @cloop
+	lda #$5d			; secret door char
+	sta charset+4*8+3
 
 start:	ldx #$ff			; empty stack (we never get back to basic)
 	txs
@@ -277,9 +311,11 @@ titles:	jsr rand8			; random text color
 	ldx #0
 @loop:  txa
 	sta SCREEN,x
+	lda #COLOR_WHITE
+	sta COLOR_RAM,x
 	inx
-	cpx #20
 	bne @loop
+@e:	jmp @e
 	.endif
 
 mainloop:
@@ -1089,7 +1125,7 @@ randomloc:
 	dec rndloc_tmp
 	bne @rndcol
 	beq randomloc  		; always branches
-@done:	rts
+@done:	rts			; TODO: eliminate rts
 
 	;*****************************************************************
 	; waits for a key press
@@ -1143,11 +1179,53 @@ useskul:.byte $83,$88,$81,$8f,$93,$a1,$00						; CHAOS!
 youwin: .byte $99,$8f,$95,$a0,$97,$89,$8e,$a1,$a0,$93,$83,$8f,$92,$85,$ba,$00		; YOU WIN! SCORE:
 levelup:.byte $8c,$85,$96,$85,$8c,$a0,$95,$90,$a1,$00					; LEVEL UP!
 
-titlec:	.byte COLOR_RED,COLOR_YELLOW	; title colors
-
 	; initial contents of status bar area in screen ram and color ram
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_ANKH,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
 statcol:.byte 2,2,2,2,2,2,2,2,1,1,5,1,1,4,1,1,7,1,1,1,1,1
+
+	; dirs for check walls
+drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
+
+	; wall bits for door placement
+drbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
+drbits_end: 
+
+	; user defined chars
+hheart:	.byte $30,$78,$78,$78,$38,$18,$08,$00
+ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08
+
+	; addresses of chars in memory
+	; chars are copied to linear memory area starting at $1d50
+charadr:.word hheart		; half heart
+	.word $8000+102*8	; #
+	.word $8000+46*8	; .
+	.word $8000+(43+128)*8	; +
+	.word $8000+102*8	; (secret door)
+	.word $8000+62*8	; > stairs
+	.word $8000		; @ player
+	.word $8000+33*8	; ! potion
+	.word $8000+90*8	; (gem)
+	.word $8000+63*8	; ? scroll
+	.word ankh		; (ankh)
+	.word $8000+36*8	; $ gold
+	.word $8800+2*8		; b bat
+	.word $8800+18*8	; r rat
+	.word $8800+23*8	; w worm
+	.word $8800+19*8	; s snake
+	.word $8800+15*8	; o orc
+	.word $8800+26*8	; z undead
+	.word $8800+32*8	;   stalker
+	.word $8800+83*8	; S slime
+	.word $8800		; @ wizard
+	.word $8800+68*8	; D demon
+charadr_end:
+
+	.segment "CHARS"
+
+	; contents of this segment is copied to cassette buffer
+	; and this area is filled with user defined char data
+
+	.org cassette_buffer
 
 	; monster and item names
 names:
@@ -1229,13 +1307,6 @@ spawns:	.byte $02+1	; 1
 	.byte $38+1	; 17
 	.byte $88+1	; 18 wizards & demon
 
-	; dirs for check walls
-drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP,0
-
-	; wall bits for door placement
-drbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
-drbits_end: 
-
 themes:	.byte $33		; 0=black, 1=white, 2=red, 3=cyan, 4=purple, 5=green, 6=blue, 7=yellow
 	.byte $33
 	.byte $33
@@ -1255,29 +1326,13 @@ themes:	.byte $33		; 0=black, 1=white, 2=red, 3=cyan, 4=purple, 5=green, 6=blue,
 	.byte $33
 	.byte $41		; wizards & demon
 
-	.segment "CHARS"
+rnditem:.byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_ANKH,SCR_GOLD
 
-	; user defined chars
-charset:.byte $30,$78,$78,$78,$38,$18,$08,$00	; (half heart)
-	.byte $aa,$55,$aa,$55,$aa,$55,$aa,$55	; # wall
-	.byte $00,$00,$00,$00,$00,$18,$18,$00	; . floor
-	.byte $ff,$f7,$f7,$c1,$f7,$f7,$ff,$ff	; + door
-	.byte $aa,$55,$aa,$5d,$aa,$55,$aa,$55	; (secret door)
-	.byte $70,$18,$0c,$06,$0c,$18,$70,$00	; > stairs
-	.byte $1c,$22,$4a,$56,$4c,$20,$1e,$00	; @ player
-	.byte $08,$08,$08,$08,$00,$00,$08,$00	; ! potion
-	.byte $08,$1c,$3e,$7f,$3e,$1c,$08,$00	; (gem)
-	.byte $3c,$42,$02,$0c,$10,$00,$10,$00	; ? scroll
-ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08	; (ankh)
-	.byte $08,$1e,$28,$1c,$0a,$3c,$08,$00	; $ gold
-	.byte $40,$40,$5c,$62,$42,$62,$5c,$00	; b bat
-	.byte $00,$00,$5c,$62,$40,$40,$40,$00	; r rat
-	.byte $00,$00,$41,$49,$49,$49,$36,$00	; w worm
-	.byte $00,$00,$3e,$40,$3c,$02,$7c,$00	; s snake
-	.byte $00,$00,$3c,$42,$42,$42,$3c,$00	; o orc
-	.byte $00,$00,$7e,$04,$18,$20,$7e,$00	; z undead
-	.byte $00,$00,$00,$00,$00,$00,$00,$00	;   stalker
-	.byte $3c,$42,$40,$3c,$02,$42,$3c,$00	; S slime
-	.byte $1c,$22,$4a,$56,$4c,$20,$1e,$00	; @ wizard
-	.byte $78,$24,$22,$22,$22,$24,$78,$00	; D demon
-charset_end:
+titlec:	.byte COLOR_RED,COLOR_YELLOW	; title colors
+
+projch:	.byte SCR_PROJ_Y,SCR_PROJ_X,SCR_PROJ_Y,SCR_PROJ_X
+
+mul3:	.byte 0,3,6,9
+
+unused:	.byte $ff		; this byte is unused!
+

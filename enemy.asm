@@ -230,5 +230,3 @@ shoot:	stx shoot_dir
 	jsr damage_flash
 	jsr player_damage
 	jmp @block
-
-projch:	.byte SCR_PROJ_Y,SCR_PROJ_X,SCR_PROJ_Y,SCR_PROJ_X

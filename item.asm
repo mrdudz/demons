@@ -7,11 +7,9 @@ random_loot:
 	jsr rand8		; pick random item
 	and #7
 	tay
-	lda @items,y
+	lda rnditem,y
 	ldy cursor_x
 	jmp plot2		; jsr + rts
-
-@items: .byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_ANKH,SCR_GOLD
 
 	;*****************************************************************
 	; use potion
