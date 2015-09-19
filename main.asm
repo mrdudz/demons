@@ -189,15 +189,15 @@ bend:	.word 0           		; end of program
 coldstart:
 	; copy chars segment to cassette buffer
 	ldx #0
-@copy:	lda charset,x			
+@copy:	lda charset+8,x			
 	sta cassette_buffer,x
 	inx
 	bne @copy
 
 	; init charset
-	lda #<charset			; $2-$3 = dest pointer in chars segments
+	lda #<(charset+8)			; $2-$3 = dest pointer in chars segments
 	sta $2
-	lda #>charset
+	lda #>(charset+8)
 	sta $3
 	ldx #0
 @cloop: lda charadr,x			; $0-$1 = src pointer in char ROM
@@ -1121,11 +1121,10 @@ randomloc:
 	jsr move
 	lda (line_ptr),y
 	cmp #SCR_FLOOR
-	beq @done
+	beq rts5
 	dec rndloc_tmp
 	bne @rndcol
 	beq randomloc  		; always branches
-@done:	rts			; TODO: eliminate rts
 
 	;*****************************************************************
 	; waits for a key press
@@ -1134,7 +1133,7 @@ randomloc:
 waitkey:jsr GETIN
 	cmp #0
 	beq waitkey
-	rts
+rts5:	rts
 
 	;*****************************************************************
 	; increase score by A
@@ -1190,13 +1189,14 @@ drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP
 drbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
 drbits_end: 
 
+rnditem:.byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_ANKH,SCR_GOLD
+
 	; user defined chars
-hheart:	.byte $30,$78,$78,$78,$38,$18,$08,$00
 ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08
 
 	; addresses of chars in memory
 	; chars are copied to linear memory area starting at $1d50
-charadr:.word hheart		; half heart
+charadr:;.word hheart		; half heart
 	.word $8000+102*8	; #
 	.word $8000+46*8	; .
 	.word $8000+(43+128)*8	; +
@@ -1221,6 +1221,9 @@ charadr:.word hheart		; half heart
 charadr_end:
 
 	.segment "CHARS"
+
+	; this is the first char
+hheart:	.byte $30,$78,$78,$78,$38,$18,$08,$00
 
 	; contents of this segment is copied to cassette buffer
 	; and this area is filled with user defined char data
@@ -1325,8 +1328,6 @@ themes:	.byte $33		; 0=black, 1=white, 2=red, 3=cyan, 4=purple, 5=green, 6=blue,
 	.byte $57		; slimes
 	.byte $33
 	.byte $41		; wizards & demon
-
-rnditem:.byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_ANKH,SCR_GOLD
 
 titlec:	.byte COLOR_RED,COLOR_YELLOW	; title colors
 
