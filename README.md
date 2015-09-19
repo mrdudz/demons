@@ -1,4 +1,4 @@
-# Demons of Dex
+# Demons of Dex - Eino's Quest
 
 A roguelike for the unexpanded VIC-20
 Copyright (C) 2015 Petri Häkkinen
@@ -7,12 +7,12 @@ You are Eino, a member of the druids.
 Your master, the arch druid has become
 old and it is time for somebody to replace
 him. As a young initiate you are sent to
-dungeon Dex, a mysterious labyrinth and
-a home to vile creatures. You must enter
+dungeon Dex, a mysterious labyrinth home
+to vile creatures. You must enter
 the dungeon alone and defeat three demon
 lords within. Only then can you achieve
-true enlightenment and ascend to become
-the next arch druid.
+enlightenment and ascend to become the
+next arch druid.
 
 Good luck!
 
