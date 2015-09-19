@@ -138,12 +138,7 @@ player_attack:
 	jmp miss_flash			; jsr miss_flash + rts
 @done2:	rts
 
-@wound: lda #COLOR_RED
-	sta (color_ptr),y
-	ldy #monwoun-textbase
-	bne @pr	
-
- @hit:	ldy #youhit-textbase
+@hit:	ldy #youhit-textbase
 	jsr print_msg
 	ldx mon_y			; restore X,Y
 	ldy mon_x
@@ -157,13 +152,18 @@ player_attack:
 	lda (color_ptr),y
 	and #7
 	cmp #COLOR_RED
-	bne @wound			; monster wounded
+	beq @nwound			; monster already wounded
+	lda #COLOR_RED
+	sta (color_ptr),y
+	ldy #monwoun-textbase
+	bne @pr				; always branches
 @nwound:lda cur_name
 	cmp #SCR_DEMON
 	bne @killit
 	dec demon_hp			; dec demon hp
-	lda demon_hp
 	bne @done2
+	jsr tremor			; demon died
+	jsr resume_music
 	; remove enemy
 @killit:lda flcolor
 	sta cur_color

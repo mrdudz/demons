@@ -136,28 +136,7 @@ use_skull:
 	bcs rts1
 	ldy #useskul-textbase
 	jsr print_msg
-	; shake effect
-	jsr pause_music
-	lda vic_scr_center	
-	sta $0			; $0 = old screen center value
-	ldx #0
-@loop:	jsr rand8
-	sta vic_noise
-	and #7
-	adc $0
-	sbc #3
-	sta vic_scr_center
-	ldy #0
-@loop2:	nop
-	nop
-	nop
-	dey			; delay
-	bne @loop2
-	dex
-	bne @loop
-	lda $0
-	sta vic_scr_center	; restore old screen center
-	jsr delay
+	jsr tremor
 	; kill visible monsters
 	ldx #1
 	jsr @killall
@@ -201,6 +180,37 @@ use_skull:
 	jsr delay2
 @skip:	dex
 	bne @kloop
+	rts
+
+tremor:	txa
+	pha
+	tya
+	pha
+	jsr pause_music
+	lda vic_scr_center	
+	sta $0			; $0 = old screen center value
+	ldx #0
+@loop:	jsr rand8
+	sta vic_noise
+	and #7
+	adc $0
+	sbc #3
+	sta vic_scr_center
+	ldy #0
+@loop2:	nop
+	nop
+	nop
+	dey			; delay
+	bne @loop2
+	dex
+	bne @loop
+	lda $0
+	sta vic_scr_center	; restore old screen center
+	jsr delay
+	pla
+	tay
+	pla
+	tax
 	rts
 
 	;*****************************************************************

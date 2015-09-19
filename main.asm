@@ -1293,7 +1293,7 @@ plcolor:.byte COLOR_WHITE			; @ player
 
 	;lvl  0   1   2   3   Dz  5   o   7   8   Ds  r   11  12  S  Dw
 spawns:	.byte $02,$03,$04,$05,$56,$06,$45,$26,$26,$67,$12,$27,$28,$89,$78	; hi=min monster, lo=max monster+1
-mcounts:.byte $03,$04,$05,$05,$06,$06,$06,$07,$07,$07,$0c,$09,$09,$03,$08	; number of monsters
+mcounts:.byte $03,$04,$05,$05,$05,$06,$06,$07,$07,$07,$0c,$09,$09,$03,$08	; number of monsters
 themes:	.byte $33,$33,$33,$33,$61,$33,$52,$33,$33,$61,$22,$33,$33,$57,$41	; hi=wall color, lo=floor color
 
 	; colors: 0=black, 1=white, 2=red, 3=cyan, 4=purple, 5=green, 6=blue, 7=yellow
