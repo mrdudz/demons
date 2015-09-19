@@ -111,6 +111,17 @@ pickup_item:
 	inc potions,x 		
 @skip:	ldy #found-textbase
 	jsr print_msg
+	; sound effect
+	jsr pause_music
+	lda #235
+	sta vic_soprano
+	lda #5
+	jsr delay2
+	lda #245
+	sta vic_soprano
+	lda #5
+	jsr delay2
+	jsr resume_music
 	pla				; restore X,Y
 	tay
 	pla
