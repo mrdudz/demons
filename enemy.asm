@@ -154,7 +154,7 @@ enemy_attack:
 	jsr print_msg
 	ldx py
 	ldy px
-	jsr move
+	;jsr move
 	jsr miss_flash
 	beq @end		; always branches (assumes that miss_flash sets Z=1)
 @hit:	; hit
@@ -162,7 +162,7 @@ enemy_attack:
 	jsr print_msg
 	ldx py
 	ldy px
-	jsr move
+	;jsr move
 	jsr damage_flash
 	jsr player_damage
 @end:	jsr movemon		; restore X,Y

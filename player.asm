@@ -418,10 +418,11 @@ hitmonster:
 	ldy mon_x
 	jsr random_loot
 	; set loot color
-	lda (line_ptr),y
-	tay
-	lda colors,y
-	ldy mon_x
+	;lda (line_ptr),y
+	;tay
+	;lda colors,y
+	lda #COLOR_UNSEEN
+	;ldy mon_x
 	sta (color_ptr),y
 @noloot:lda #SCORE_MONSTER		; add score
 	ldy cur_name
