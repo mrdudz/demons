@@ -18,20 +18,20 @@ function convert_text(t)
 	end
 
 	-- count unique chars
-	local chars = {}
-	for i=1,#t,2 do
-		local text = t[i+1]
-		for j=1,#text do
-			local ch = text:sub(j, j)
-			chars[ch] = (chars[ch] or 0) + 1
-		end
-	end
-	local cnt = 0
-	for k,v in pairs(chars) do
-		print(k..": "..v)
-		cnt = cnt + 1
-	end
-	print(cnt.." unique chars.")
+	-- local chars = {}
+	-- for i=1,#t,2 do
+	-- 	local text = t[i+1]
+	-- 	for j=1,#text do
+	-- 		local ch = text:sub(j, j)
+	-- 		chars[ch] = (chars[ch] or 0) + 1
+	-- 	end
+	-- end
+	-- local cnt = 0
+	-- for k,v in pairs(chars) do
+	-- 	print(k..": "..v)
+	-- 	cnt = cnt + 1
+	-- end
+	-- print(cnt.." unique chars.")
 end
 
 convert_text{
@@ -62,6 +62,7 @@ convert_text{
 	"useskul:",	"CHAOS!",
 	"youwin:",	"YOU WIN! SCORE:",
 	"levelup:",	"LEVEL UP!",
+	"askdir:",	"DIR?",
 }
 
 print("---")

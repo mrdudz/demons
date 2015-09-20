@@ -29,23 +29,23 @@ update_player:
 	beq @left
 	cmp #'D'
 	beq @right
-	; cmp #'Z'
-	; bne @nshoot
-	; jsr move
-	; ldx #1
-	; jmp shoot
-@nshoot:cmp #CHR_F1
+	.if ZAP
+	cmp #'Z'
+	bne @nzap
+	jmp zap
+@nzap:	.endif
+	cmp #CHR_F1
 	bne @skipf1
-	jmp use_potion
+	jmp use_potion		; TODO: inline function?
 @skipf1:cmp #CHR_F3
 	bne @skipf3
-	jmp use_gem
+	jmp use_gem		; TODO: inline function?
 @skipf3:cmp #CHR_F5
 	bne @skipf5
-	jmp use_scroll
+	jmp use_scroll		; TODO: inline function?
 @skipf5:cmp #CHR_F7
 	bne @skipf7
-	jmp use_skull
+	jmp use_skull		; TODO: inline function?
 @skipf7:rts
 
 @up:	dex
@@ -315,13 +315,6 @@ wingame:; clear screen effect
 	; player damage
 	;*****************************************************************
 
-player_damage:
-	dec hp
-	jsr update_hp
-	lda hp
-	beq player_die
-	rts
-
 player_die:
 	ldy #youdie-textbase
 gameover:
@@ -348,3 +341,92 @@ gameover:
 	cmp #32
 	bne @loop
 	jmp start
+
+player_damage:
+	dec hp
+	jsr update_hp
+	lda hp
+	beq player_die
+rts3:	rts
+
+	;*****************************************************************
+	; zap staff
+	;*****************************************************************
+
+	.if ZAP
+zap:	jsr move
+	ldy #askdir-textbase
+	jsr print_msg
+@waitkb:jsr waitkey
+	ldx #0
+@loop:	cmp wdsa,x
+	beq shoot
+	inx
+	cpx #4
+	beq @waitkb		; invalid key
+	bne @loop		; always branch
+	;
+	;
+	.endif
+
+	;*****************************************************************
+	; shoot projectile
+	; X = direction (0=up, 1=right, 2=down, 3=left)
+	;*****************************************************************
+
+shoot:	stx shoot_dir
+	lda projch,x
+	sta shoot_char
+	lda cursor_x			; store cursor
+	pha
+	lda cursor_y
+	pha
+@loop:	ldx shoot_dir
+	jsr movedir
+	lda (line_ptr),y		; check obstacle
+	;cmp #SCR_BAT
+	;bpl @hitenemy
+	cmp #SCR_PLAYER
+	beq @hitplayer
+	cmp #SCR_FLOOR
+	bne @block
+	lda (color_ptr),y
+	and #7
+	.if COLOR_UNSEEN
+	cmp #COLOR_UNSEEN
+	.endif
+	beq @block
+	lda shoot_char
+	sta (line_ptr),y
+	lda #COLOR_WHITE
+	sta (color_ptr),y
+	lda #4
+	jsr delay2
+	bcs @loop			; always branch (delay2 always sets carry)
+@block:	; erase projectile
+	pla				; restore cursor
+	tax
+	pla
+	tay
+	jsr move
+@loop2:	ldx shoot_dir
+	jsr movedir
+	lda (line_ptr),y		; check obstacle
+	cmp shoot_char
+	bne rts3
+	lda #SCR_FLOOR
+	sta (line_ptr),y
+	lda flcolor
+	sta (color_ptr),y
+	lda #4
+	jsr delay2
+	bcs @loop2			; always branch (delay2 always sets carry)
+
+; @hitenemy:
+; 	jsr damage_flash
+; 	jmp @block
+
+@hitplayer:
+	jsr damage_flash
+	jsr player_damage
+	jmp @block

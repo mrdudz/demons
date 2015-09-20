@@ -20,6 +20,7 @@ SCORE_DEMON	= 100
 DEFAULT_DELAY	= 25		; default delay value for delay routine in 1/60 seconds
 WIZARD_TRIGGER	= 3		; wizard trigger happiness, higher the value the more often wizards shoot
 SECRET_DOOR	= 7		; secret door probability after stalker level
+ZAP		= 0		; enable zapping with the staff (runs out of memory!)
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
@@ -1174,7 +1175,10 @@ usescr: .byte $94,$95,$92,$8e,$85,$84,$a0,$89,$8e,$96,$89,$93,$89,$82,$8c,$85,$a
 useskul:.byte $83,$88,$81,$8f,$93,$a1,$00						; CHAOS!
 youwin: .byte $99,$8f,$95,$a0,$97,$89,$8e,$a1,$a0,$93,$83,$8f,$92,$85,$ba,$00		; YOU WIN! SCORE:
 levelup:.byte $8c,$85,$96,$85,$8c,$a0,$95,$90,$a1,$00					; LEVEL UP!
-
+	.if ZAP
+askdir: .byte $84,$89,$92,$bf,$00							; DIR?
+	.endif
+	
 	; initial contents of status bar area in screen ram and color ram
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_ANKH,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
 statcol:.byte 2,2,2,2,2,2,2,2,1,1,5,1,1,4,1,1,7,1,1,1,1,1
@@ -1222,6 +1226,10 @@ projch:	.byte SCR_PROJ_Y,SCR_PROJ_X,SCR_PROJ_Y,SCR_PROJ_X
 mul3:	.byte 0,3,6,9
 
 ankhc:	.byte COLOR_CYAN,COLOR_WHITE,COLOR_CYAN,COLOR_BLUE	; ankh color cycle
+
+	.if ZAP
+wdsa:	.byte "WDSA"
+	.endif
 
 	.segment "CHARS"
 
