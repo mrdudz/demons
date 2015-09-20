@@ -1,6 +1,6 @@
 # Demons of Dex - Eino's Quest
 
-A roguelike for the unexpanded VIC-20
+A roguelike for the unexpanded VIC-20  
 Copyright (C) 2015 Petri Häkkinen
 
 You are Eino, a member of the druids. Your master, the arch druid has become old and it is time for somebody to replace him. As a young initiate you are sent to dungeon Dex, a mysterious labyrinth home to vile creatures. You must enter the dungeon alone and defeat three demon lords within. Only then can you achieve enlightenment and ascend to become the next arch druid.
@@ -9,29 +9,29 @@ Good luck!
 
 ### How to play?
 
-Press W,A,S and D to move. Attack by walking on enemies. Items are automatically picked up when you walk on them.
+Use W,A,S and D keys to move. Attack by walking on enemies. Items are automatically picked up when you walk on them.
 
-Items that you find are used by pressing the following keys:
+Items that you have picked up can be used by pressing the following keys:
 
-F1 - use potion
-F3 - use gem
-F5 - use scroll
-F7 - use ankh
-Z  - use staff
+F1 - use potion  
+F3 - use gem  
+F5 - use scroll  
+F7 - use ankh  
+Z  - use staff  
 
-### What are the characters on the screen?
+### What do the characters on the screen mean?
 
-@  Eino (that's you!)
->  Stairs to next level
-!  Potion
-?  Scroll
-+  Door
+```@```  Eino (that's you!)  
+```>```  Stairs to next level  
+```!```  Potion  
+```?```  Scroll  
+```+```  Door  
 
-Monsters are depicted by letters. There are other characters, find out yourselves what they are!
+Monsters are depicted by letters. There are also other characters not listed here, find out yourselves what they are!
 
 ### Treasures of Dex
 
-During your adventure you may find treasures which can be really helpful in fulfilling your quest. Some of them are dropped by monsters, some you will have to find!
+During your adventure you may find treasures which can be used during your quest. Some of them are dropped by monsters, some you will have to find!
 
 **Potion (F1):** These are depicted by red '!' characters. Drink a potion to heal your wounds by pressing F1.
 
@@ -46,6 +46,11 @@ During your adventure you may find treasures which can be really helpful in fulf
 ### Scoring
 
 Your score increases when you do one of the following:
-+10 for each monster defeated.
-+100 for each item found.
-+1000 for each demon banished.
+
++10 for each monster defeated.  
++100 for each item found.  
++1000 for each demon banished.  
+
+### Leveling up
+
+When you defeat enemies you will get experience points. After a certain amount of experience points Eino will level up. As this happens Eino's health will be replenished. Your maximum health capacity will also gradually expand as you gain levels.
