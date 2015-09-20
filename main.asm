@@ -27,6 +27,7 @@ MUSIC		= 1
 ; levels
 START_LEVEL	= 0
 DEMON_LEVEL1	= 4
+STAFF_LEVEL	= 5
 STALKER_LEVEL	= 9
 DEMON_LEVEL2	= 9
 FINAL_LEVEL	= 14
@@ -681,6 +682,15 @@ init_theme:
 	tya
 	and #7
 	sta flcolor
+	;
+	;
+init_staff:
+	cpx #STAFF_LEVEL	; x = dungeon level
+	bne @skip
+	jsr randomloc
+	lda #SCR_STAFF
+	jsr plot
+@skip:
 
 	;*****************************************************************
 	; reveal area
