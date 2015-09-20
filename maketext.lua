@@ -74,6 +74,7 @@ convert_text{
 	"_scroll:",	"SCROLL",
 	"_ankh:",	"ANKH",
 	"_gold:",	"GOLD",
+	"_staff:",	"STAFF",
 	"_bat:",	"BAT",
 	"_rat:",	"RAT",
 	"_worm:",	"WORM",

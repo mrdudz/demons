@@ -163,10 +163,11 @@ use_skull:
 	pla
 	tax
 	ldy cursor_x
-	lda #SCR_FLOOR
-	sta (line_ptr),y
-	lda flcolor
-	sta (color_ptr),y
+	;lda #SCR_FLOOR
+	;sta (line_ptr),y
+	;lda flcolor
+	;sta (color_ptr),y
+	jsr plotfloor
 	lda #50
 	jsr delay2
 @skip:	dex
@@ -176,18 +177,29 @@ rts6:	rts
 zapplayer:				; projectile hit player
 	jsr damage_flash
 	jsr player_damage
-	jmp shoot2
+	jmp shoot2			; TODO: always branch
 
-zapenemy:				; projectile hit monster
+zapenemy:
+	sta cur_name			; projectile hit monster
  	sty mon_x
  	stx mon_y
  	jsr hitmonster
- 	jmp shoot2
+ 	jmp shoot2			; TODO: always branch
 
-zap:	cmp #'Z'
+zap:	jsr move			; set cursor for shoot routine
+	cmp #'Z'
 	bne move_player
-	jsr move
-	ldy #askdir-textbase
+	lda #SCR_STAFF
+	sta cur_name
+	lda staff			; check that player has staff
+	cmp #SCR_STAFF
+	beq @zapok
+	ldy #outof-textbase
+	jmp print_msg
+	;dec staff_charges		; consume charge
+	;bne @zapok
+	;ldy 
+@zapok:	ldy #askdir-textbase
 	jsr print_msg
 	inc turn			; reset flood counter
 @waitkb:jsr waitkey
@@ -245,11 +257,8 @@ shoot2:	; erase projectile
 	jsr movedir
 	lda (line_ptr),y		; check obstacle
 	cmp shoot_char
-	bne rts6
-	lda #SCR_FLOOR
-	sta (line_ptr),y
-	lda flcolor
-	sta (color_ptr),y
+	bne rts7
+	jsr plotfloor
 	lda #4
 	jsr delay2
 	bcs @loop2			; always branch (delay2 always sets carry)
@@ -286,10 +295,11 @@ trymove:jsr move		; X,Y = move target
 	cmp #SCR_DOOR
 	bne @nopen
 	; open door
-	lda #COLOR_UNSEEN
-	sta cur_color
-	lda #SCR_FLOOR
-	jsr plot
+	;lda #COLOR_UNSEEN
+	;sta cur_color
+	;lda #SCR_FLOOR
+	;jsr plot
+	jsr plotfloor
 	ldy #opened-textbase
 	jmp print_msg		; jsr print_msg + rts
 @nopen:	cmp #SCR_BAT
@@ -322,7 +332,13 @@ pickup_item:
 	pha
 	lda (line_ptr),y		; store name
 	sta cur_name
-	cmp #SCR_GOLD
+	cmp #SCR_STAFF
+	bne @nstaff
+	; staff found
+	lda #SCR_STAFF
+	sta staff
+	bcc @skip			; always branch
+@nstaff:cmp #SCR_GOLD
 	bne @notgp
 	; gold found
 	lda #SCORE_GOLD
@@ -403,10 +419,11 @@ hitmonster:
 	jsr tremor			; demon died
 	jsr resume_music
 	; remove enemy
-@killit:lda flcolor
-	sta cur_color
-	lda #SCR_FLOOR
-	jsr plot
+@killit:;lda flcolor
+	;sta cur_color
+	;lda #SCR_FLOOR
+	;jsr plot
+	jsr plotfloor
 	; drop loot
 	lda cur_name
 	cmp #SCR_SLIME

@@ -130,10 +130,11 @@ move_enemy:
 	beq @skip
 	; clear monster from old cell
 	jsr movemon
-	lda #SCR_FLOOR
-	sta (line_ptr),y
-	lda flcolor
-	sta (color_ptr),y
+	; lda #SCR_FLOOR
+	; sta (line_ptr),y
+	; lda flcolor
+	; sta (color_ptr),y
+	jsr plotfloor
 @skip:	clc			; success => clear carry
 	rts
 

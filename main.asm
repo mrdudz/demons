@@ -20,6 +20,7 @@ SCORE_DEMON	= 100
 DEFAULT_DELAY	= 25		; default delay value for delay routine in 1/60 seconds
 WIZARD_TRIGGER	= 3		; wizard trigger happiness, higher the value the more often wizards shoot
 SECRET_DOOR	= 7		; secret door probability after stalker level
+;STAFF_CHARGES	= 10
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
@@ -57,28 +58,30 @@ CHR_F5		= 135
 CHR_F7		= 136
 
 ; screen codes
-SCR_HALF_HEART	= 0 + 42
-SCR_WALL	= 1 + 42
-SCR_FLOOR	= 2 + 42
-SCR_DOOR	= 3 + 42
-SCR_SECRET_DOOR	= 4 + 42
-SCR_STAIRS	= 5 + 42
-SCR_PLAYER	= 6 + 42
-SCR_POTION	= 7 + 42
-SCR_GEM		= 8 + 42
-SCR_SCROLL	= 9 + 42
-SCR_ANKH	= 10 + 42
-SCR_GOLD	= 11 + 42
-SCR_BAT		= 12 + 42
-SCR_RAT		= 13 + 42
-SCR_WORM	= 14 + 42
-SCR_SNAKE	= 15 + 42
-SCR_ORC		= 16 + 42
-SCR_UNDEAD	= 17 + 42
-SCR_STALKER	= 18 + 42
-SCR_WIZARD	= 19 + 42
-SCR_SLIME	= 20 + 42
-SCR_DEMON	= 21 + 42
+SCR_BASE	= 41
+SCR_HALF_HEART	= 0 + SCR_BASE
+SCR_WALL	= 1 + SCR_BASE
+SCR_FLOOR	= 2 + SCR_BASE
+SCR_DOOR	= 3 + SCR_BASE
+SCR_SECRET_DOOR	= 4 + SCR_BASE
+SCR_STAIRS	= 5 + SCR_BASE
+SCR_PLAYER	= 6 + SCR_BASE
+SCR_POTION	= 7 + SCR_BASE
+SCR_GEM		= 8 + SCR_BASE
+SCR_SCROLL	= 9 + SCR_BASE
+SCR_ANKH	= 10 + SCR_BASE
+SCR_GOLD	= 11 + SCR_BASE
+SCR_STAFF	= 12 + SCR_BASE
+SCR_BAT		= 13 + SCR_BASE
+SCR_RAT		= 14 + SCR_BASE
+SCR_WORM	= 15 + SCR_BASE
+SCR_SNAKE	= 16 + SCR_BASE
+SCR_ORC		= 17 + SCR_BASE
+SCR_UNDEAD	= 18 + SCR_BASE
+SCR_STALKER	= 19 + SCR_BASE
+SCR_WIZARD	= 20 + SCR_BASE
+SCR_SLIME	= 21 + SCR_BASE
+SCR_DEMON	= 22 + SCR_BASE
 SCR_SPACE 	= 32 + $80
 SCR_0	 	= 48 + $80
 SCR_DAMAGE	= 42 + $80
@@ -145,19 +148,21 @@ max_spawn	= $2d
 shoot_dir	= $2e
 shoot_char	= $2f
 shoot_counter	= $30
+;staff_charges	= $31
 line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 cursor_x	= $d3
 cursor_y	= $d6
 
 ; other variables
 cassette_buffer = $033c		; $033c-$03ff
-charset		= $1d50		; address of first char in the user defined charset (vic base address is $1c00)
+charset		= $1d48		; address of first char in the user defined charset (vic base address is $1c00)
 blocked_cells	= $0100		; 22 byte temp array in stack page for enemy update routine
 cur_color	= $0286		; color for CHROUT
 potions		= SCREEN+492	; item counts are stored in screen ram
 gems		= potions+3
 scrolls		= gems+3
 skulls		= scrolls+3
+staff		= SCREEN+22*23-1
 
 ; VIC registers
 vic_scr_center	= $9000
@@ -218,7 +223,7 @@ coldstart:
 @skip:	cpx #charadr_end-charadr
 	bne @cloop
 	lda #$5d			; secret door char
-	sta charset+4*8+3
+	sta $1c00+SCR_SECRET_DOOR*8+3
 
 start:	ldx #$ff			; empty stack (we never get back to basic)
 	txs
@@ -296,6 +301,12 @@ titles:	jsr rand8			; random text color
 	sta hp
 	sta max_hp
 
+	; init staff charges
+	; jsr rand8
+	; and #3
+	; adc #STAFF_CHARGES
+	; sta staff_charges
+
 	jsr random_level
 	jsr update_hp
 
@@ -315,6 +326,12 @@ titles:	jsr rand8			; random text color
 	sta gems
 	sta scrolls
 	sta skulls
+	.endif
+
+	; staff cheat
+	.if 0
+	lda #SCR_PLAYER
+	sta staff
 	.endif
 
 	; dump charset
@@ -886,6 +903,17 @@ plot2:	sta (line_ptr),y
 rts2:	rts
 
 	;*****************************************************************
+	; plots a floor character at row X, column Y
+	;*****************************************************************
+
+plotfloor:
+	lda #SCR_FLOOR
+	sta (line_ptr),y
+	lda flcolor
+	sta (color_ptr),y
+	rts
+
+	;*****************************************************************
 	; prints text at cursor
 	; X = text offset
 	; Y = dest offset
@@ -1216,6 +1244,7 @@ charadr:;.word hheart		; half heart
 	.word $8000+63*8	; ? scroll
 	.word ankh		; (ankh)
 	.word $8000+36*8	; $ gold
+	.word $8000+47*8	; / staff
 	.word $8800+2*8		; b bat
 	.word $8800+18*8	; r rat
 	.word $8800+23*8	; w worm
@@ -1251,6 +1280,7 @@ _gem:   .byte $87,$85,$8d,$00								; GEM
 _scroll:.byte $93,$83,$92,$8f,$8c,$8c,$00						; SCROLL
 _ankh:  .byte $81,$8e,$8b,$88,$00							; ANKH
 _gold:  .byte $87,$8f,$8c,$84,$00							; GOLD
+_staff: .byte $93,$94,$81,$86,$86,$00							; STAFF
 _bat:   .byte $82,$81,$94,$00								; BAT
 _rat:   .byte $92,$81,$94,$00								; RAT
 _worm:  .byte $97,$8f,$92,$8d,$00							; WORM
@@ -1269,6 +1299,7 @@ _nameof:.byte _potion-names
 	.byte _scroll-names
 	.byte _ankh-names
 	.byte _gold-names
+	.byte _staff-names
 	.byte _bat-names
 	.byte _rat-names
 	.byte _worm-names
@@ -1293,6 +1324,7 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_PURPLE			; ? scroll
 	.byte COLOR_YELLOW			; (ankh)
 	.byte COLOR_YELLOW			; $ gold
+	.byte COLOR_WHITE			; / staff
 	.byte COLOR_RED				; b bat		0
 	.byte COLOR_RED				; r rat		1
 	.byte COLOR_WHITE			; w worm	2
