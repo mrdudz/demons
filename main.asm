@@ -308,6 +308,15 @@ titles:	jsr rand8			; random text color
 	dex
 	bpl @stat
 
+	; items cheat
+	.if 0
+	lda #'9'+$80
+	sta potions
+	sta gems
+	sta scrolls
+	sta skulls
+	.endif
+
 	; dump charset
 	.if 0
 	ldx #0

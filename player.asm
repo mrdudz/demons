@@ -2,71 +2,221 @@
 	; update player
 	;*****************************************************************
 
-blocked:
+update_player:
+	; store old pos
+	ldy px
+	ldx py
+	stx $0
+	sty $1
+	;
+	;
+use_potion:
+	cmp #CHR_F1
+	bne use_gem
+	lda #0
+	jsr use_item
+	bcs rts1
+	lda #14
+	sta $900f
+	; play sound
+	jsr pause_music
+	ldx #128
+@sfx:	stx vic_bass
+	lda #1
+	jsr delay2
+	inx
+	inx
+	inx
+	inx
+	bne @sfx
+	jsr resume_music
+	;
+	lda #8
+	sta $900f
+	lda max_hp
+	sta hp
+	jsr update_hp
+	ldy #usepot-textbase
+	jmp print_msg		; jsr + rts
+
+use_gem:
+	cmp #CHR_F3
+	bne use_scroll
+	lda #1
+	jsr use_item
+	bcs rts1
+	lda #93
+	sta $900f
+	; play sound
+	jsr pause_music
+	ldx #50
+@sfx:	jsr rand8
+	ora #$80
+	sta vic_soprano
+	lda #1
+	jsr delay2
+	dex
+	bne @sfx
+	;
+	jsr resume_music	
+	ldx #1
+	jsr @gemreveal
+	ldx #11
+	jsr @gemreveal
+	lda #8
+	sta $900f
+	ldy #usegem-textbase
+	jmp print_msg		; jsr + rts
+
+@gemreveal: ; reveal 256 bytes
+	ldy #0
+	jsr move
+@loop:	lda (color_ptr),y
+	and #7
+	.if COLOR_UNSEEN
+	cmp #COLOR_UNSEEN
+	.endif
+	bne @skip
+	lda (line_ptr),y
+	tax
+	lda colors,x
+	sta (color_ptr),y
+@skip:	iny
+	bne @loop
+rts1:	rts
+
+use_scroll:
+	cmp #CHR_F5
+	bne use_skull
+	lda #2
+	jsr use_item
+	bcs rts1
+	lda #14
+	sta $900f
+	; play sound
+	jsr pause_music
+	ldx #192
+@sfx:	stx vic_soprano
+	lda #1
+	jsr delay2
+	inx
+	inx
+	inx
+	inx
+	bne @sfx
+	jsr resume_music
+	;
+	lda #8
+	sta $900f
+	lda #INVISIBLE_TIME
+	sta invisibility
+	lda #COLOR_BLUE
+	sta plcolor
+	ldy px
+	ldx py
+	jsr move
+	sta (color_ptr),y
+	ldy #usescr-textbase
+	jmp print_msg		; jsr + rts
+
+use_skull:
+	cmp #CHR_F7
+	bne move_player
+	lda #3
+	jsr use_item
+	bcs rts1
+	ldy #useskul-textbase
+	jsr print_msg
+	jsr tremor
+	; kill visible monsters
+	ldx #1
+	jsr @killall
+	ldx #11
+	jsr @killall
+	jmp resume_music	; jsr + rts
+
+@killall: ; reveal 256 bytes
+	ldy #0
+	jsr move
+	ldx #0
+@kloop:	jsr rand8
+	tay
+	lda (line_ptr),y
+	sta cur_name
+	cmp #SCR_BAT
+	bmi @skip		; skip non-monster cells
+	cmp #SCR_DEMON
+	bpl @skip		; demons are immune to skulls
+	lda (color_ptr),y
+	and #7
+	.if COLOR_UNSEEN
+	cmp #COLOR_UNSEEN
+	.endif
+	beq @skip		; skip unseen cells
+	; kill
+	sty cursor_x
+	txa
+	pha
+	jsr damage_flash
+	ldy #mondies-textbase
+	jsr print_msg
+	pla
+	tax
+	ldy cursor_x
+	lda #SCR_FLOOR
+	sta (line_ptr),y
+	lda flcolor
+	sta (color_ptr),y
+	lda #50
+	jsr delay2
+@skip:	dex
+	bne @kloop
+	rts
+
+move_player:
+	cmp #'W'
+	beq up
+	cmp #'S'
+	beq down
+	cmp #'A'
+	beq left
+	cmp #'D'
+	beq right
+	.if ZAP
+	cmp #'Z'
+	bne @nzap
+	jmp zap			; TODO: inline code
+@nzap:	.endif
+	rts
+
+up:	dex
+	bne trymove		; always branches
+down:	inx
+	bne trymove		; always branches
+left:	dey
+	bpl trymove		; can't use bne here, in case player is on left edge of map
+right:	iny
+
+trymove:jsr move		; X,Y = move target
+	; check obstacle
+	lda (line_ptr),y
+	cmp #SCR_WALL
+	bne @nblock
+	; blocked
 	ldy #block-textbase
 	jmp print_msg		; jsr print_msg + rts
-
-open_door:
+@nblock:cmp #SCR_STAIRS
+	beq enter_stairs
+	cmp #SCR_DOOR
+	bne @nopen
+	; open door
 	lda #COLOR_UNSEEN
 	sta cur_color
 	lda #SCR_FLOOR
 	jsr plot
 	ldy #opened-textbase
 	jmp print_msg		; jsr print_msg + rts
-
-update_player:
-	; handle movement
-	ldy px
-	ldx py
-	; store old pos
-	stx $0
-	sty $1
-	cmp #'W'
-	beq @up
-	cmp #'S'
-	beq @down
-	cmp #'A'
-	beq @left
-	cmp #'D'
-	beq @right
-	.if ZAP
-	cmp #'Z'
-	bne @nzap
-	jmp zap
-@nzap:	.endif
-	cmp #CHR_F1
-	bne @skipf1
-	jmp use_potion		; TODO: inline function?
-@skipf1:cmp #CHR_F3
-	bne @skipf3
-	jmp use_gem		; TODO: inline function?
-@skipf3:cmp #CHR_F5
-	bne @skipf5
-	jmp use_scroll		; TODO: inline function?
-@skipf5:cmp #CHR_F7
-	bne @skipf7
-	jmp use_skull		; TODO: inline function?
-@skipf7:rts
-
-@up:	dex
-	bne @move		; always branches
-@down:	inx
-	bne @move		; always branches
-@left:	dey
-	bpl @move		; can't use bne here, in case player is on left edge of map
-@right:	iny
-
-@move:	; X,Y = move target
-	jsr move
-	; check obstacle
-	lda (line_ptr),y
-	cmp #SCR_WALL
-	beq blocked
-	cmp #SCR_STAIRS
-	beq enter_stairs
-	cmp #SCR_DOOR
-	beq open_door
-	cmp #SCR_BAT
+@nopen:	cmp #SCR_BAT
 	bpl player_attack
 	cmp #SCR_POTION
 	bpl pickup_item
