@@ -4,8 +4,7 @@
 
 update_player:
 	; store old pos
-	ldy px
-	ldx py
+	jsr plcurs
 	stx $0
 	sty $1
 	;
@@ -111,9 +110,7 @@ use_scroll:
 	sta invisibility
 	lda #COLOR_BLUE
 	sta plcolor
-	ldy px
-	ldx py
-	jsr move
+	jsr plcurs
 	sta (color_ptr),y
 	ldy #usescr-textbase
 	jmp print_msg		; jsr + rts
@@ -161,10 +158,6 @@ use_skull:
 	pla
 	tax
 	ldy cursor_x
-	;lda #SCR_FLOOR
-	;sta (line_ptr),y
-	;lda flcolor
-	;sta (color_ptr),y
 	jsr plotfloor
 	lda #50
 	jsr delay2
@@ -172,94 +165,37 @@ use_skull:
 	bne @kloop
 rts6:	rts
 
-zapplayer:				; projectile hit player
-	jsr damage_flash
-	jsr player_damage
-	bne shoot2			; always branch
-
-zapenemy:
-	sta cur_name			; projectile hit monster
- 	sty mon_x
- 	stx mon_y
- 	jsr hitmonster
- 	jmp shoot2			; TODO: always branch
-
-zap:	jsr move			; set cursor for shoot routine
+zap:	;jsr move			; set cursor for shoot routine
 	cmp #'Z'
 	bne move_player
 	lda #SCR_STAFF
 	sta cur_name
 	lda staff			; check that player has staff
 	cmp #SCR_STAFF
-	beq @zapok
+	beq @stafok
 	ldy #outof-textbase
+	jsr print_msg
+	lda #SCR_FLOOR			; remove extra 'S'
+	sta SCREEN+8
+	rts
+@stafok:dec staff_charges		; consume charge
+	bne @charok
+	lda #SCR_SPACE			; break staff
+	sta staff
+	ldy #staffbr-textbase
 	jmp print_msg
-	;dec staff_charges		; consume charge
-	;bne @zapok
-	;ldy 
-@zapok:	ldy #askdir-textbase
+@charok:ldy #askdir-textbase
 	jsr print_msg
 	inc turn			; reset flood counter
-@waitkb:jsr waitkey
+@waitkb:jsr GETIN
 	ldx #0
 @loop:	cmp wdsa,x
-	beq shoot
-	inx
+	bne @skip
+	jmp shoot
+@skip:	inx
 	cpx #4
 	beq @waitkb			; invalid key
 	bne @loop			; always branch
-
-	;*****************************************************************
-	; shoot projectile
-	; X = direction (0=up, 1=right, 2=down, 3=left)
-	;*****************************************************************
-
-shoot:	stx shoot_dir
- 	lda projch,x
-	sta shoot_char
-	ldy #zzt-textbase
- 	jsr print_msg
-	lda cursor_x			; store cursor
-	pha
-	lda cursor_y
-	pha
-@loop:	ldx shoot_dir
-	jsr movedir
-	lda (line_ptr),y		; check obstacle
-	cmp #SCR_BAT
-	bpl zapenemy
-	cmp #SCR_PLAYER
-	beq zapplayer
-	cmp #SCR_FLOOR
-	bne shoot2
-	jsr fetchcolor
-	.if COLOR_UNSEEN
-	cmp #COLOR_UNSEEN
-	.endif
-	beq shoot2
-	lda shoot_char
-	sta (line_ptr),y
-	lda #COLOR_WHITE
-	sta (color_ptr),y
-	lda #4
-	jsr delay2
-	bcs @loop			; always branch (delay2 always sets carry)
-shoot2:	; erase projectile
-	pla				; restore cursor
-	tax
-	pla
-	tay
-	jsr move
-@loop2:	ldx shoot_dir
-	jsr movedir
-	lda (line_ptr),y		; check obstacle
-	cmp shoot_char
-	bne rts7
-	jsr plotfloor
-	lda #4
-	jsr delay2
-	bcs @loop2			; always branch (delay2 always sets carry)
-rts7:	rts
 
 move_player:
 	cmp #'W'
@@ -275,7 +211,7 @@ move_player:
 	dey
 	bpl trymove		; can't use bne here, in case player is on left edge of map
 @nleft:	cmp #'D'
-	bne rts7
+	bne rts6
 	iny
 	;
 	;
@@ -292,10 +228,6 @@ trymove:jsr move		; X,Y = move target
 	cmp #SCR_DOOR
 	bne @nopen
 	; open door
-	;lda #COLOR_UNSEEN
-	;sta cur_color
-	;lda #SCR_FLOOR
-	;jsr plot
 	jsr plotfloor
 	ldy #opened-textbase
 	jmp print_msg		; jsr print_msg + rts
@@ -336,12 +268,8 @@ pickup_item:
 	sta staff
 	bcc @skip			; always branch
 @nstaff:cmp #SCR_GOLD
-	bne @notgp
-	; gold found
-	lda #SCORE_GOLD
-	jsr add_score			; always clears carry
-	bcc @skip			; always branches
-@notgp:	tax
+	beq @skip
+	tax
 	lda mul3-SCR_POTION,x
 	tax				; X = item type * 3
 	lda potions,x
@@ -361,6 +289,8 @@ pickup_item:
 	lda #5
 	jsr delay2
 	jsr resume_music
+	lda #SCORE_ITEM			; add score
+	jsr add_score
 	pla				; restore X,Y
 	tay
 	pla
@@ -415,11 +345,7 @@ hitmonster:
 	jsr tremor			; demon died
 	jsr resume_music
 	; remove enemy
-@killit:;lda flcolor
-	;sta cur_color
-	;lda #SCR_FLOOR
-	;jsr plot
-	jsr plotfloor
+@killit:jsr plotfloor
 	; drop loot
 	lda cur_name
 	cmp #SCR_SLIME
@@ -427,15 +353,10 @@ hitmonster:
 	jsr rand8
 	cmp #LOOT_DROP
 	bcs @noloot
-	ldx mon_y			; restore X,Y
-	ldy mon_x
+	jsr movemon
 	jsr random_loot
 	; set loot color
-	;lda (line_ptr),y
-	;tay
-	;lda colors,y
 	lda #COLOR_UNSEEN
-	;ldy mon_x
 	sta (color_ptr),y
 @noloot:lda #SCORE_MONSTER		; add score
 	ldy cur_name
@@ -573,14 +494,78 @@ gameover:
 	dex
 	bpl @reb
 
-@loop:	jsr waitkey			; wait space
+@loop:	jsr GETIN			; wait space
 	cmp #32
 	bne @loop
 	jmp start
 
 player_damage:
+	.if INVULNERABLE = 0
 	dec hp
+	.endif
 	jsr update_hp
 	lda hp
 	beq player_die
 	rts
+
+	;*****************************************************************
+	; shoot projectile
+	; X = direction (0=up, 1=right, 2=down, 3=left)
+	;*****************************************************************
+
+shoot:	stx shoot_dir
+ 	lda projch,x
+	sta shoot_char
+	ldy #zzt-textbase
+ 	jsr print_msg
+	lda cursor_x			; store cursor
+	pha
+	lda cursor_y
+	pha
+@loop:	ldx shoot_dir
+	jsr movedir
+	lda (line_ptr),y		; check obstacle
+	cmp #SCR_BAT
+	bpl zapenemy
+	cmp #SCR_PLAYER
+	beq zapplayer
+	cmp #SCR_FLOOR
+	bne shoot2
+	jsr fetchcolor
+	.if COLOR_UNSEEN
+	cmp #COLOR_UNSEEN
+	.endif
+	beq shoot2
+	lda shoot_char
+	sta (line_ptr),y
+	lda #COLOR_WHITE
+	sta (color_ptr),y
+	lda #2
+	jsr delay2
+	bcs @loop			; always branch (delay2 always sets carry)
+shoot2:	; erase projectile
+	pla				; restore cursor
+	tax
+	pla
+	tay
+	jsr move
+@loop2:	ldx shoot_dir
+	jsr movedir
+	lda (line_ptr),y		; check obstacle
+	cmp shoot_char
+	bne @done
+	jsr plotfloor
+	bne @loop2			; always branch
+@done:	rts
+
+zapenemy:
+	sta cur_name			; projectile hit monster
+ 	sty mon_x
+ 	stx mon_y
+ 	jsr hitmonster
+ 	jmp shoot2			; TODO: always branch
+
+zapplayer:				; projectile hit player
+	jsr damage_flash
+	jsr player_damage
+	bne shoot2			; always branch

@@ -1,9 +1,8 @@
 	;*****************************************************************
-	; random loot drop at X,Y
+	; random loot drop at cursor
 	;*****************************************************************
 
 random_loot:
-	jsr move
 	jsr rand8		; pick random item
 	and #7
 	tay

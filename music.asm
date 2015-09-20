@@ -60,10 +60,9 @@ irq:	lda tempo_counter	; increment music pos
 	lda pattern_row
 	lsr			; A = pattern position/2
 	sta pattern_row2
-	lda #$f0		; note mask $f0
-	bcc @skip2
-	lda #$0f		; note mask $0f
-@skip2:	sta note_mask
+	lda #0			; store carry in note mask 
+	adc #0
+	sta note_mask
 
 	ldx song_pos		; x = song position
 
@@ -110,19 +109,21 @@ dochan:	; in: A = pattern
 	lda paterns,y		; A = packed note
 	; unpack note
 	ldy note_mask
-	bpl @low
+	bne @low
 	lsr
 	lsr
 	lsr
 	lsr
-	bmi @high		; always branches
+	.byte $2c		; skip next 2 bytes
 @low:	and #$0f
-@high:	tay
+	tay
 	lda notelut,y
 	rts
 
 	; pattern data, 240 bytes (15 patterns * 16 bytes/pattern)
-paterns:.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+paterns:
+	.if MUSIC
+	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 	.byte $30,$00,$00,$00,$30,$00,$00,$00,$30,$00,$00,$30,$00,$00,$30,$00
 	.byte $30,$00,$00,$00,$30,$00,$00,$00,$30,$00,$00,$30,$00,$30,$00,$30
 	.byte $00,$00,$00,$34,$50,$40,$30,$00,$22,$22,$00,$00,$00,$00,$00,$00
@@ -137,9 +138,11 @@ paterns:.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 	.byte $33,$00,$00,$00,$30,$00,$00,$00,$30,$00,$00,$30,$00,$30,$00,$30
 	.byte $20,$00,$00,$00,$00,$00,$00,$20,$20,$00,$00,$00,$00,$00,$00,$00
 	.byte $bb,$bb,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+	.endif
 
 	; song data, 56 bytes (28 rows * 2 bytes/row)
-song:	.byte $10,$0d
+song:	.if MUSIC
+	.byte $10,$0d
 	.byte $20,$0d
 	.byte $10,$3d
 	.byte $20,$4d
@@ -167,6 +170,7 @@ song:	.byte $10,$0d
 	.byte $16,$3d
 	.byte $27,$9d
 	.byte $ba,$ae
+	.endif
 songend:
 
 	; note lookup table, 12 bytes

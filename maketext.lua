@@ -51,10 +51,10 @@ convert_text{
 	"monmiss:",	"% MISSES!",
 	"mondies:",	"% DIES!",
 	"monwoun:",	"% IS WOUNDED!",
-	"opened:",	"OPENED",
-	"block:",	"BLOCKED",
-	"found:",	"FOUND %",
-	"outof:",	"NO %S",
+	"opened:",	"OPENED.",
+	"block:",	"BLOCKED.",
+	"found:",	"FOUND %.",
+	"outof:",	"NO %S.",
 	"useitem:",	"USE %",
 	"usepot:",	"HEALED!",
 	"usegem:",	"VISION!",
@@ -64,6 +64,7 @@ convert_text{
 	"levelup:",	"LEVEL UP!",
 	"askdir:",	"DIR?",
 	"zzt:",		"ZZZT!",
+	"staffbr:",	"% BREAKS!",
 }
 
 print("---")

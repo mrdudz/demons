@@ -9,27 +9,26 @@ COLOR_RAM	= $9600
 
 ; constants
 INITIAL_HP	= 6
+INVULNERABLE	= 0		; make player invulnerable (cheat)
 PLAYER_ACCURACY	= 200
 ENEMY_ACCURACY	= 80
-LOOT_DROP	= 50
+LOOT_DROP	= 55
 INVISIBLE_TIME	= 45
 DEMON_HP	= 3
 SCORE_MONSTER	= 1
-SCORE_GOLD	= 10
+SCORE_ITEM	= 10
 SCORE_DEMON	= 100
 DEFAULT_DELAY	= 25		; default delay value for delay routine in 1/60 seconds
 WIZARD_TRIGGER	= 3		; wizard trigger happiness, higher the value the more often wizards shoot
 SECRET_DOOR	= 7		; secret door probability after stalker level
-;STAFF_CHARGES	= 10
-DEBUG		= 0		; set to 0 for strip debug code
+STAFF_CHARGES	= 15
+DEBUG		= 0		; set to 0 to strip debug code
 MUSIC		= 1
 
 ; levels
 START_LEVEL	= 0
-DEMON_LEVEL1	= 4
 STAFF_LEVEL	= 5
 STALKER_LEVEL	= 9
-DEMON_LEVEL2	= 9
 FINAL_LEVEL	= 14
 
 ; kernal routines
@@ -149,7 +148,7 @@ max_spawn	= $2d
 shoot_dir	= $2e
 shoot_char	= $2f
 shoot_counter	= $30
-;staff_charges	= $31
+staff_charges	= $31
 line_ptr	= $d1		; $d1-$d2 pointer to current line (updated by Kernal)
 cursor_x	= $d3
 cursor_y	= $d6
@@ -202,7 +201,7 @@ coldstart:
 	bne @copy
 
 	; init charset
-	lda #<(charset+8)			; $2-$3 = dest pointer in chars segments
+	lda #<(charset+8)		; $2-$3 = dest pointer in chars segments
 	sta $2
 	lda #>(charset+8)
 	sta $3
@@ -228,15 +227,16 @@ coldstart:
 
 start:	ldx #$ff			; empty stack (we never get back to basic)
 	txs
+	stx vic_volume			; max volume
+	stx $9005			; set character base to $1c00
 	lda #8
 	sta vic_colors
 	lda #$80			; turn on key repeat for all keys
+	tax				; x = $80
 	sta $028a
-	lda #$ff			; set character base to $1c00
-	sta $9005
 
 	; init zero page vars to zero
-	ldx #$50
+	;ldx #$50
 	lda #0
 @zp:	sta $0,x
 	dex
@@ -253,8 +253,6 @@ start:	ldx #$ff			; empty stack (we never get back to basic)
 	bne @clear
 
 	.if MUSIC
-	lda #15				; set music volume
-	sta vic_volume
 	sei
 	lda #<irq
 	sta $0314
@@ -301,12 +299,8 @@ titles:	jsr rand8			; random text color
 	lda #INITIAL_HP
 	sta hp
 	sta max_hp
-
-	; init staff charges
-	; jsr rand8
-	; and #3
-	; adc #STAFF_CHARGES
-	; sta staff_charges
+	lda #STAFF_CHARGES+1
+	sta staff_charges
 
 	jsr random_level
 	jsr update_hp
@@ -348,7 +342,10 @@ titles:	jsr rand8			; random text color
 	.endif
 
 mainloop:
-	jsr waitkey
+	jsr GETIN		; waitkey
+	cmp #0
+	beq mainloop
+
 	jsr update_player
 
 	; update invisibility
@@ -356,9 +353,7 @@ mainloop:
 	bne @skip
 	lda #COLOR_WHITE
 	sta plcolor
-	ldx py
-	ldy px
-	jsr move
+	jsr plcurs
 	sta (color_ptr),y
 @skip:
 
@@ -439,6 +434,8 @@ random_level:
 	; init walker
 	ldx #10			; x = 10
 	ldy #11			; y = 11
+	stx py			; store player location
+	sty px
 	lda #1
 	sta walker_dx		; dx = 1
 	lda #0
@@ -449,7 +446,17 @@ random_level:
 	; random initial turn
 	jsr rand8
 	cmp #128
-	bcc @turn
+	bcs @loop
+
+	; turn (dx,dy = dy,-dx)
+@turn:	lda walker_dy
+	pha			; dy to stack
+	lda #0
+	sec
+	sbc walker_dx
+	sta walker_dy		; dy' = -dx
+	pla
+	sta walker_dx		; dx' = dy
 
 	; plot
 @loop:	lda #SCR_FLOOR
@@ -482,20 +489,11 @@ random_level:
 	; check random turn
 	jsr rand8
 	cmp #77
-	bcs @loop
+	bcc @turn
+	bcs @loop		; always branch
+	;
+	;
 
-	; turn (dx,dy = dy,-dx)
-@turn:	lda walker_dy
-	pha			; dy to stack
-	lda #0
-	sec
-	sbc walker_dx
-	sta walker_dy		; dy' = -dx
-	pla
-	sta walker_dx		; dx' = dy
-	jmp @loop
-	;
-	;
 init_doors:
 	; traverse the level and check walls at each floor cell
 	ldx #20 		; X = row
@@ -566,12 +564,9 @@ init_doors:
 	;
 	;
 init_player:
-	ldx #10
-	ldy #11
-	stx py
-	sty px
+	jsr plcurs
 	lda #SCR_PLAYER
-	jsr plot
+	sta (line_ptr),y
 	;
 	;
 init_stairs:
@@ -581,22 +576,21 @@ init_stairs:
 	cpy #14
 	bmi init_stairs
 @ok:	; replace stairs with demon on special levels
-	lda dungeon_level
-	cmp #DEMON_LEVEL1
-	beq @demon
-	cmp #DEMON_LEVEL2
-	beq @demon
-	cmp #FINAL_LEVEL
-	beq @demon
+	ldx dungeon_level
+	lda mcounts,x
+	and #$f0
+	bne @demon
 	lda #SCR_STAIRS
-	bne @plot		; always branches
+	.byte $2c		; skip next 2 bytes
 @demon:	lda #SCR_DEMON
-@plot:	jsr plot
+	ldy cursor_x		; restore x
+	sta (line_ptr),y
 	;
 	;
 init_enemies:
 	ldx dungeon_level
 	lda mcounts,x
+	and #$f
 	sta $0			; $0 = spawn count
 	lda spawns,x
 	tax
@@ -608,18 +602,16 @@ init_enemies:
 	lsr
 	lsr
 	sta min_spawn
-@loop:	jsr rand8
+@loop:	jsr randomloc
+@rnds:	jsr rand8
 	and #15
 	cmp min_spawn
-	bmi @loop
+	bmi @rnds
 	cmp max_spawn
-	bpl @loop
+	bpl @rnds
 	clc
 	adc #SCR_BAT
-	pha
-	jsr randomloc
-	pla
-	jsr plot
+	sta (line_ptr),y
 	dec $0
 	bne @loop
 	;
@@ -689,7 +681,7 @@ init_staff:
 	bne @skip
 	jsr randomloc
 	lda #SCR_STAFF
-	jsr plot
+	sta (line_ptr),y
 @skip:
 
 	;*****************************************************************
@@ -895,9 +887,18 @@ movedir:lda @dirs,x
 	jsr CHROUT
 	ldx cursor_y
 	ldy cursor_x
-	jmp move	; jsr + rts
+	bpl move	; always branches (jsr + rts)
 
 @dirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_LEFT
+
+	;*****************************************************************
+	; move cursor to player
+	;*****************************************************************
+
+plcurs:	ldy px
+	ldx py
+	jsr move
+	rts
 
 	;*****************************************************************
 	; plots a character in A at row X, column Y
@@ -958,15 +959,15 @@ print_hex:
 	lsr
 	tay
 	lda @digits,y
-	jsr CHROUT
+	sta SCREEN
 	txa
 	and #$f
 	tay
 	lda @digits,y
-	jsr CHROUT
+	sta SCREEN+1
 	rts
 
-@digits: .byte "0123456789ABCDEF"
+@digits: .byte $b0,$b1,$b2,$b3,$b4,$b5,$b6,$b7,$b8,$b9,$81,$82,$83,$84,$85,$86
 	.endif
 
 	;*****************************************************************
@@ -1057,7 +1058,8 @@ miss_flash:
 	cmp mon_x
 	beq @ver
 	lda #SCR_MISS_X
-	bne @hor		; always branch
+	;bne @hor		; always branch
+	.byte $2c		; skip next 2 bytes
 @ver:	lda #SCR_MISS_Y
 @hor:	sta (line_ptr),y
 	lda #COLOR_WHITE
@@ -1177,15 +1179,6 @@ randomloc:
 	beq randomloc  		; always branches
 
 	;*****************************************************************
-	; waits for a key press
-	;*****************************************************************
-
-waitkey:jsr GETIN
-	cmp #0
-	beq waitkey
-rts5:	rts
-
-	;*****************************************************************
 	; increase score by A
 	;*****************************************************************
 
@@ -1193,9 +1186,9 @@ add_score:
 	clc
 	adc score
 	sta score
-	bcc @skip
+	bcc rts5
 	inc score+1
-@skip:	rts
+rts5:	rts
 
 	;*****************************************************************
 	; data
@@ -1216,10 +1209,10 @@ monhit: .byte $25,$a0,$88,$89,$94,$93,$a0,$99,$8f,$95,$a1,$00				; % HITS YOU!
 monmiss:.byte $25,$a0,$8d,$89,$93,$93,$85,$93,$a1,$00					; % MISSES!
 mondies:.byte $25,$a0,$84,$89,$85,$93,$a1,$00						; % DIES!
 monwoun:.byte $25,$a0,$89,$93,$a0,$97,$8f,$95,$8e,$84,$85,$84,$a1,$00			; % IS WOUNDED!
-opened: .byte $8f,$90,$85,$8e,$85,$84,$00						; OPENED
-block:  .byte $82,$8c,$8f,$83,$8b,$85,$84,$00						; BLOCKED
-found:  .byte $86,$8f,$95,$8e,$84,$a0,$25,$00						; FOUND %
-outof:  .byte $8e,$8f,$a0,$25,$93,$00							; NO %S
+opened: .byte $8f,$90,$85,$8e,$85,$84,$ae,$00						; OPENED.
+block:  .byte $82,$8c,$8f,$83,$8b,$85,$84,$ae,$00					; BLOCKED.
+found:  .byte $86,$8f,$95,$8e,$84,$a0,$25,$ae,$00					; FOUND %.
+outof:  .byte $8e,$8f,$a0,$25,$93,$ae,$00						; NO %S.
 useitem:.byte $95,$93,$85,$a0,$25,$00							; USE %
 usepot: .byte $88,$85,$81,$8c,$85,$84,$a1,$00						; HEALED!
 usegem: .byte $96,$89,$93,$89,$8f,$8e,$a1,$00						; VISION!
@@ -1229,6 +1222,7 @@ youwin: .byte $99,$8f,$95,$a0,$97,$89,$8e,$a1,$a0,$93,$83,$8f,$92,$85,$ba,$00		;
 levelup:.byte $8c,$85,$96,$85,$8c,$a0,$95,$90,$a1,$00					; LEVEL UP!
 askdir: .byte $84,$89,$92,$bf,$00							; DIR?
 zzt:    .byte $9a,$9a,$9a,$94,$a1,$00							; ZZZT!
+staffbr:.byte $25,$a0,$82,$92,$85,$81,$8b,$93,$a1,$00					; % BREAKS!
 
 	; initial contents of status bar area in screen ram and color ram
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_ANKH,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
@@ -1241,7 +1235,8 @@ drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP
 drbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
 drbits_end: 
 
-rnditem:.byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_ANKH,SCR_GOLD
+;rnditem:.byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_ANKH,SCR_GOLD
+rnditem:.byte SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF
 
 	; user defined chars
 ankh:	.byte $1c,$22,$22,$14,$08,$3e,$08,$08
@@ -1352,9 +1347,9 @@ plcolor:.byte COLOR_WHITE			; @ player
 	.byte COLOR_YELLOW			; S slime	8
 	.byte COLOR_PURPLE			; D demon	9
 
-	;lvl  0   1   2   3   Dz  5   o   7   8   Ds  r   11  12  S  Dw
+	;lvl  0   1   2   3   Dz  5   o   7   8   Ds  r   11  12  S   Dw
 spawns:	.byte $02,$03,$04,$05,$56,$06,$45,$26,$26,$67,$12,$27,$28,$89,$78	; hi=min monster, lo=max monster+1
-mcounts:.byte $03,$04,$05,$05,$05,$06,$06,$07,$07,$07,$0c,$09,$09,$03,$07	; number of monsters
+mcounts:.byte $03,$04,$05,$05,$f5,$06,$06,$07,$07,$f7,$0c,$09,$09,$03,$f7	; hi=demon, lo=monster count
 themes:	.byte $33,$33,$33,$33,$61,$33,$52,$33,$33,$61,$22,$33,$33,$57,$41	; hi=wall color, lo=floor color
 
 	; colors: 0=black, 1=white, 2=red, 3=cyan, 4=purple, 5=green, 6=blue, 7=yellow

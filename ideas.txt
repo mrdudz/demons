@@ -1,3 +1,6 @@
+BUGS:
+- if player dies with score 0, double "00" is printed
+
 TODO:
 - check that init stairs does not get stuck in infinite loop
 - add sound to win game effect
