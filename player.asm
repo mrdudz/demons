@@ -275,14 +275,9 @@ wingame:; clear screen effect
 	dex
 	bne @clear
 	; draw ankh
-	lda #100	; loop counter
-	sta $1
-@loop:	lda $1
-	and #3
-	tax
-	lda ankhc,x
+	lda #7
 	sta cur_color
-	ldx #6		; X = row
+@loop:	ldx #6		; X = row
 @yloop:	ldy #6		; Y = column
 	jsr move	; move cursor to top-left corner on screen
 	lda #$80
@@ -303,9 +298,9 @@ wingame:; clear screen effect
 	inx
 	cpx #6+8
 	bne @yloop
-	lda #2
+	lda #10
 	jsr delay2
-	dec $1
+	dec cur_color
 	bne @loop
 	; you win
 	ldy #youwin-textbase

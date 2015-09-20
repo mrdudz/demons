@@ -700,7 +700,7 @@ reveal:	lda #1			; top-right segment
 	ldx py
 @vloop:	jsr move
 	jsr @reveal_cell
-	beq @block		; done if blocked
+	beq @end		; done if blocked
 	ldy reveal_x		; restore X,Y
 	ldx reveal_y
 	txa			; step y
@@ -708,7 +708,6 @@ reveal:	lda #1			; top-right segment
 	adc reveal_dy
 	tax
 	bne @vloop		; always branches
-@block:	rts
 
 @reveal_cell:
 	sty reveal_x
@@ -1178,7 +1177,7 @@ levelup:.byte $8c,$85,$96,$85,$8c,$a0,$95,$90,$a1,$00					; LEVEL UP!
 	.if ZAP
 askdir: .byte $84,$89,$92,$bf,$00							; DIR?
 	.endif
-	
+
 	; initial contents of status bar area in screen ram and color ram
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_ANKH,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
 statcol:.byte 2,2,2,2,2,2,2,2,1,1,5,1,1,4,1,1,7,1,1,1,1,1
@@ -1224,8 +1223,6 @@ charadr_end:
 projch:	.byte SCR_PROJ_Y,SCR_PROJ_X,SCR_PROJ_Y,SCR_PROJ_X
 
 mul3:	.byte 0,3,6,9
-
-ankhc:	.byte COLOR_CYAN,COLOR_WHITE,COLOR_CYAN,COLOR_BLUE	; ankh color cycle
 
 	.if ZAP
 wdsa:	.byte "WDSA"
