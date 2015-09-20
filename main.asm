@@ -12,7 +12,7 @@ INITIAL_HP	= 6
 INVULNERABLE	= 0		; make player invulnerable (cheat)
 PLAYER_ACCURACY	= 200
 ENEMY_ACCURACY	= 80
-LOOT_DROP	= 55
+LOOT_DROP	= 60
 INVISIBLE_TIME	= 45
 DEMON_HP	= 3
 SCORE_MONSTER	= 1
@@ -21,7 +21,7 @@ SCORE_DEMON	= 100
 DEFAULT_DELAY	= 25		; default delay value for delay routine in 1/60 seconds
 WIZARD_TRIGGER	= 3		; wizard trigger happiness, higher the value the more often wizards shoot
 SECRET_DOOR	= 7		; secret door probability after stalker level
-STAFF_CHARGES	= 15
+STAFF_CHARGES	= 25
 DEBUG		= 0		; set to 0 to strip debug code
 MUSIC		= 1
 
@@ -1235,7 +1235,7 @@ drdirs:	.byte CHR_UP,CHR_RIGHT,CHR_DOWN,CHR_DOWN,CHR_LEFT,CHR_LEFT,CHR_UP,CHR_UP
 drbits: .byte $d8,$8d,$63,$36,$8c,$c8,$23,$32,$22,$66,$27,$76
 drbits_end: 
 
-rnditem:.byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_GOLD,SCR_GEM,SCR_SCROLL,SCR_ANKH,SCR_GOLD
+rnditem:.byte SCR_POTION,SCR_POTION,SCR_GOLD,SCR_ANKH,SCR_GEM,SCR_SCROLL,SCR_GOLD,SCR_GOLD
 ;rnditem:.byte SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF,SCR_STAFF
 
 	; user defined chars

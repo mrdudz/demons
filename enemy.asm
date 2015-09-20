@@ -92,9 +92,9 @@ movemon:ldy mon_x
 slime_update:			; slimes move randomly
 	jsr rand8
 	and #7
-	cmp #6
-	bpl monupd		; -> move
-	cmp #4
+	cmp #7
+	beq monupd		; -> move
+	cmp #3
 	bpl rts4
 	tax
 	;

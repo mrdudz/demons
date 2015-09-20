@@ -54,3 +54,9 @@ Your score increases when you do one of the following:
 ### Leveling up
 
 When you defeat enemies you will get experience points. After a certain amount of experience points Eino will level up. As this happens Eino's health will be replenished. Your maximum health capacity will also gradually expand as you gain levels.
+
+### Credits
+
+Programming: Petri Häkkinen  
+Music: Mikko Kallinen  
+Beta testing: Erik Salmi  
