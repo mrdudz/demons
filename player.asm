@@ -71,8 +71,7 @@ use_gem:
 @gemreveal: ; reveal 256 bytes
 	ldy #0
 	jsr move
-@loop:	lda (color_ptr),y
-	and #7
+@loop:	jsr fetchcolor
 	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
 	.endif
@@ -147,8 +146,7 @@ use_skull:
 	bmi @skip		; skip non-monster cells
 	cmp #SCR_DEMON
 	bpl @skip		; demons are immune to skulls
-	lda (color_ptr),y
-	and #7
+	jsr fetchcolor
 	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
 	.endif
@@ -177,7 +175,7 @@ rts6:	rts
 zapplayer:				; projectile hit player
 	jsr damage_flash
 	jsr player_damage
-	jmp shoot2			; TODO: always branch
+	bne shoot2			; always branch
 
 zapenemy:
 	sta cur_name			; projectile hit monster
@@ -234,8 +232,7 @@ shoot:	stx shoot_dir
 	beq zapplayer
 	cmp #SCR_FLOOR
 	bne shoot2
-	lda (color_ptr),y
-	and #7
+	jsr fetchcolor
 	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
 	.endif
@@ -403,8 +400,7 @@ hitmonster:
 	jsr rand8			; 50% chance of skipping wounded state
 	cmp #$80
 	bpl @nwound
-	lda (color_ptr),y
-	and #7
+	jsr fetchcolor
 	cmp #COLOR_RED
 	beq @nwound			; monster already wounded
 	lda #COLOR_RED
@@ -587,4 +583,4 @@ player_damage:
 	jsr update_hp
 	lda hp
 	beq player_die
-rts3:	rts
+	rts

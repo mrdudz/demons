@@ -14,7 +14,7 @@ monupd:	cpx py
 	beq @skip1
 	ldx #0			
 	jsr move_enemy
-	bcc @done		; done if moved
+	bcc @rts3		; done if moved
 @skip1: ; move right
 	cpy px			
 	bpl @skip2
@@ -24,7 +24,7 @@ monupd:	cpx py
 	bcs @skip2
 	; moving right is tricky: skip next cell to prevent monster getting updated twice
 	iny
-	rts
+@rts3:	rts
 @skip2:	; move down
 	cpx py			
 	bpl @skip3
@@ -38,11 +38,10 @@ monupd:	cpx py
 	rts
 @skip3:	; move left
 	cpy px			
-	bmi @done
-	beq @done
+	bmi @rts3
+	beq @rts3
 	ldx #3			
-	jsr move_enemy
-@done:	rts
+	bne move_enemy		; always branch
 
 	;*****************************************************************
 	; wizard update
@@ -57,8 +56,7 @@ wiz_update:			; try to shoot in random direction
 	sta shoot_dir
 @loop:	ldx shoot_dir
 	jsr movedir
-	lda (color_ptr),y
-	and #7
+	jsr fetchcolor
 	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
 	.endif
@@ -115,8 +113,7 @@ move_enemy:
 	beq enemy_attack
 	cmp #SCR_FLOOR
 	bne @block		; blocked
-	lda (color_ptr),y
-	and #7
+	jsr fetchcolor
 	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
 	.endif

@@ -383,8 +383,7 @@ update_enemies:
 	sta cur_name		; store monster
 	stx mon_y
 	sty mon_x
-	lda (color_ptr),y
-	and #7
+	jsr fetchcolor
 	sta mon_color
 	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN	; skip unseen cells
@@ -780,8 +779,7 @@ reveal:	lda #1			; top-right segment
 @mark_cell_visible:
 	lda (line_ptr),y
 	tax			; X = screen code to be revealed
-	lda (color_ptr),y
-	and #7
+	jsr fetchcolor
 	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN	; don't touch already seen blocks (preserves monster colors)
 	.endif
@@ -805,8 +803,7 @@ reveal_area:
 	ldx cursor_y
 
 	; fetch cell color, stop recursion if cell already revealed
-	lda (color_ptr),y
-	and #7			; color ram is 4-bit wide, high nibble contains garbage
+	jsr fetchcolor
 	.if COLOR_UNSEEN
 	cmp #COLOR_UNSEEN
 	.endif
@@ -911,6 +908,15 @@ plotfloor:
 	sta (line_ptr),y
 	lda flcolor
 	sta (color_ptr),y
+	rts
+
+	;*****************************************************************
+	; fetch color at cursor
+	;*****************************************************************
+
+fetchcolor:
+	lda (color_ptr),y
+	and #7
 	rts
 
 	;*****************************************************************
