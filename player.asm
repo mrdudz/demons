@@ -17,9 +17,9 @@ use_potion:
 	jsr use_item
 	bcs rts1
 	lda #14
-	sta $900f
+	;sta $900f
 	; play sound
-	jsr pause_music
+	jsr set_color_and_pause_music
 	ldx #128
 @sfx:	stx vic_bass
 	lda #1
@@ -46,9 +46,9 @@ use_gem:
 	jsr use_item
 	bcs rts1
 	lda #93
-	sta $900f
+	;sta $900f
 	; play sound
-	jsr pause_music
+	jsr set_color_and_pause_music
 	ldx #50
 @sfx:	jsr rand8
 	ora #$80
@@ -92,9 +92,9 @@ use_scroll:
 	jsr use_item
 	bcs rts1
 	lda #14
-	sta $900f
+	;sta $900f
 	; play sound
-	jsr pause_music
+	jsr set_color_and_pause_music
 	ldx #192
 @sfx:	stx vic_soprano
 	lda #1
@@ -121,7 +121,7 @@ use_scroll:
 
 use_skull:
 	cmp #CHR_F7
-	bne move_player
+	bne zap
 	lda #3
 	jsr use_item
 	bcs rts1
@@ -171,32 +171,108 @@ use_skull:
 	jsr delay2
 @skip:	dex
 	bne @kloop
-	rts
+rts6:	rts
+
+zapplayer:				; projectile hit player
+	jsr damage_flash
+	jsr player_damage
+	jmp shoot2
+
+zapenemy:				; projectile hit monster
+ 	sty mon_x
+ 	stx mon_y
+ 	jsr hitmonster
+ 	jmp shoot2
+
+zap:	cmp #'Z'
+	bne move_player
+	jsr move
+	ldy #askdir-textbase
+	jsr print_msg
+	inc turn			; reset flood counter
+@waitkb:jsr waitkey
+	ldx #0
+@loop:	cmp wdsa,x
+	beq shoot
+	inx
+	cpx #4
+	beq @waitkb			; invalid key
+	bne @loop			; always branch
+
+	;*****************************************************************
+	; shoot projectile
+	; X = direction (0=up, 1=right, 2=down, 3=left)
+	;*****************************************************************
+
+shoot:	stx shoot_dir
+ 	lda projch,x
+	sta shoot_char
+	ldy #zzt-textbase
+ 	jsr print_msg
+	lda cursor_x			; store cursor
+	pha
+	lda cursor_y
+	pha
+@loop:	ldx shoot_dir
+	jsr movedir
+	lda (line_ptr),y		; check obstacle
+	cmp #SCR_BAT
+	bpl zapenemy
+	cmp #SCR_PLAYER
+	beq zapplayer
+	cmp #SCR_FLOOR
+	bne shoot2
+	lda (color_ptr),y
+	and #7
+	.if COLOR_UNSEEN
+	cmp #COLOR_UNSEEN
+	.endif
+	beq shoot2
+	lda shoot_char
+	sta (line_ptr),y
+	lda #COLOR_WHITE
+	sta (color_ptr),y
+	lda #4
+	jsr delay2
+	bcs @loop			; always branch (delay2 always sets carry)
+shoot2:	; erase projectile
+	pla				; restore cursor
+	tax
+	pla
+	tay
+	jsr move
+@loop2:	ldx shoot_dir
+	jsr movedir
+	lda (line_ptr),y		; check obstacle
+	cmp shoot_char
+	bne rts6
+	lda #SCR_FLOOR
+	sta (line_ptr),y
+	lda flcolor
+	sta (color_ptr),y
+	lda #4
+	jsr delay2
+	bcs @loop2			; always branch (delay2 always sets carry)
+rts7:	rts
 
 move_player:
 	cmp #'W'
-	beq up
-	cmp #'S'
-	beq down
-	cmp #'A'
-	beq left
-	cmp #'D'
-	beq right
-	.if ZAP
-	cmp #'Z'
-	bne @nzap
-	jmp zap			; TODO: inline code
-@nzap:	.endif
-	rts
-
-up:	dex
+	bne @nup
+	dex
 	bne trymove		; always branches
-down:	inx
+@nup:	cmp #'S'
+	bne @ndown
+	inx
 	bne trymove		; always branches
-left:	dey
+@ndown:	cmp #'A'
+	bne @nleft
+	dey
 	bpl trymove		; can't use bne here, in case player is on left edge of map
-right:	iny
-
+@nleft:	cmp #'D'
+	bne rts7
+	iny
+	;
+	;
 trymove:jsr move		; X,Y = move target
 	; check obstacle
 	lda (line_ptr),y
@@ -291,22 +367,23 @@ player_attack:
 	sta cur_name			; store current monster
 	jsr rand8
 	cmp #PLAYER_ACCURACY
-	bcc @hit
+	bcc hit
 	ldy #youmiss-textbase
 	jsr print_msg
 	ldx mon_y			; restore X,Y
 	ldy mon_x
 	jmp miss_flash			; jsr miss_flash + rts
-@done2:	rts
+rts8:	rts
 
-@hit:	ldy #youhit-textbase
+hit:	ldy #youhit-textbase
 	jsr print_msg
+hitmonster:
 	ldx mon_y			; restore X,Y
 	ldy mon_x
 	jsr damage_flash
 	jsr rand8
 	cmp #$80
-	bpl @done2			; 50% chance of not doing damage
+	bpl rts8			; 50% chance of not doing damage
 	jsr rand8			; 50% chance of skipping wounded state
 	cmp #$80
 	bpl @nwound
@@ -322,7 +399,7 @@ player_attack:
 	cmp #SCR_DEMON
 	bne @killit
 	dec demon_hp			; dec demon hp
-	bne @done2
+	bne rts8
 	jsr tremor			; demon died
 	jsr resume_music
 	; remove enemy
@@ -493,85 +570,3 @@ player_damage:
 	lda hp
 	beq player_die
 rts3:	rts
-
-	;*****************************************************************
-	; zap staff
-	;*****************************************************************
-
-	.if ZAP
-zap:	jsr move
-	ldy #askdir-textbase
-	jsr print_msg
-@waitkb:jsr waitkey
-	ldx #0
-@loop:	cmp wdsa,x
-	beq shoot
-	inx
-	cpx #4
-	beq @waitkb		; invalid key
-	bne @loop		; always branch
-	;
-	;
-	.endif
-
-	;*****************************************************************
-	; shoot projectile
-	; X = direction (0=up, 1=right, 2=down, 3=left)
-	;*****************************************************************
-
-shoot:	stx shoot_dir
-	lda projch,x
-	sta shoot_char
-	lda cursor_x			; store cursor
-	pha
-	lda cursor_y
-	pha
-@loop:	ldx shoot_dir
-	jsr movedir
-	lda (line_ptr),y		; check obstacle
-	;cmp #SCR_BAT
-	;bpl @hitenemy
-	cmp #SCR_PLAYER
-	beq @hitplayer
-	cmp #SCR_FLOOR
-	bne @block
-	lda (color_ptr),y
-	and #7
-	.if COLOR_UNSEEN
-	cmp #COLOR_UNSEEN
-	.endif
-	beq @block
-	lda shoot_char
-	sta (line_ptr),y
-	lda #COLOR_WHITE
-	sta (color_ptr),y
-	lda #4
-	jsr delay2
-	bcs @loop			; always branch (delay2 always sets carry)
-@block:	; erase projectile
-	pla				; restore cursor
-	tax
-	pla
-	tay
-	jsr move
-@loop2:	ldx shoot_dir
-	jsr movedir
-	lda (line_ptr),y		; check obstacle
-	cmp shoot_char
-	bne rts3
-	lda #SCR_FLOOR
-	sta (line_ptr),y
-	lda flcolor
-	sta (color_ptr),y
-	lda #4
-	jsr delay2
-	bcs @loop2			; always branch (delay2 always sets carry)
-
-; @hitenemy:
-; 	jsr damage_flash
-; 	jmp @block
-
-@hitplayer:
-	jsr damage_flash
-	jsr player_damage
-	jmp @block

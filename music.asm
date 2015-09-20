@@ -5,6 +5,8 @@ TEMPO		= 34
 	; pause music
 	;*****************************************************************
 
+set_color_and_pause_music:
+	sta $900f
 pause_music:
 	sei
 	lda #1

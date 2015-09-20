@@ -20,7 +20,6 @@ SCORE_DEMON	= 100
 DEFAULT_DELAY	= 25		; default delay value for delay routine in 1/60 seconds
 WIZARD_TRIGGER	= 3		; wizard trigger happiness, higher the value the more often wizards shoot
 SECRET_DOOR	= 7		; secret door probability after stalker level
-ZAP		= 0		; enable zapping with the staff (runs out of memory!)
 DEBUG		= 0		; set to 0 for strip debug code
 MUSIC		= 1
 
@@ -266,6 +265,9 @@ titles:	jsr rand8			; random text color
 	sta text_color
 	ldy #0
 	ldx #6
+	;lda #6
+	txa
+	jsr delay2
 	jsr move
 	ldx #0
 	ldy #3				; x offset
@@ -280,8 +282,6 @@ titles:	jsr rand8			; random text color
 	inx
 	ldy #1+22*7			; x offset
 	jsr print_title
-	lda #6
-	jsr delay2
 	jsr GETIN
 	cmp #0
 	beq titles
@@ -999,9 +999,9 @@ damres:	jsr resume_music
 	pla			; restore color
 	sta (color_ptr),y	
 	pla			; restore char
-	sta (line_ptr),y	
-	lda #0			; reset flood counter
-	sta msg_time		; NOTE: enemy_attack assumes that Z=1 when returning from this routine!
+	sta (line_ptr),y
+	inc turn		; reset flood counter
+	lda #0			; NOTE: enemy_attack assumes that Z=1 when returning from this routine!
 	rts
 
 miss_flash:
@@ -1172,20 +1172,19 @@ monhit: .byte $25,$a0,$88,$89,$94,$93,$a0,$99,$8f,$95,$a1,$00				; % HITS YOU!
 monmiss:.byte $25,$a0,$8d,$89,$93,$93,$85,$93,$a1,$00					; % MISSES!
 mondies:.byte $25,$a0,$84,$89,$85,$93,$a1,$00						; % DIES!
 monwoun:.byte $25,$a0,$89,$93,$a0,$97,$8f,$95,$8e,$84,$85,$84,$a1,$00			; % IS WOUNDED!
-opened: .byte $8f,$90,$85,$8e,$85,$84,$ae,$00						; OPENED.
-block:  .byte $82,$8c,$8f,$83,$8b,$85,$84,$ae,$00					; BLOCKED.
-found:  .byte $86,$8f,$95,$8e,$84,$a0,$25,$ae,$00					; FOUND %.
-outof:  .byte $8e,$8f,$a0,$25,$93,$ae,$00						; NO %S.
+opened: .byte $8f,$90,$85,$8e,$85,$84,$00						; OPENED
+block:  .byte $82,$8c,$8f,$83,$8b,$85,$84,$00						; BLOCKED
+found:  .byte $86,$8f,$95,$8e,$84,$a0,$25,$00						; FOUND %
+outof:  .byte $8e,$8f,$a0,$25,$93,$00							; NO %S
 useitem:.byte $95,$93,$85,$a0,$25,$00							; USE %
 usepot: .byte $88,$85,$81,$8c,$85,$84,$a1,$00						; HEALED!
-usegem: .byte $81,$a0,$96,$89,$93,$89,$8f,$8e,$a1,$00					; A VISION!
+usegem: .byte $96,$89,$93,$89,$8f,$8e,$a1,$00						; VISION!
 usescr: .byte $94,$95,$92,$8e,$85,$84,$a0,$89,$8e,$96,$89,$93,$89,$82,$8c,$85,$a1,$00	; TURNED INVISIBLE!
 useskul:.byte $83,$88,$81,$8f,$93,$a1,$00						; CHAOS!
 youwin: .byte $99,$8f,$95,$a0,$97,$89,$8e,$a1,$a0,$93,$83,$8f,$92,$85,$ba,$00		; YOU WIN! SCORE:
 levelup:.byte $8c,$85,$96,$85,$8c,$a0,$95,$90,$a1,$00					; LEVEL UP!
-	.if ZAP
 askdir: .byte $84,$89,$92,$bf,$00							; DIR?
-	.endif
+zzt:    .byte $9a,$9a,$9a,$94,$a1,$00							; ZZZT!
 
 	; initial contents of status bar area in screen ram and color ram
 statscr:.byte SCR_POTION,SCR_0,SCR_SPACE,SCR_GEM,SCR_0,SCR_SPACE,SCR_SCROLL,SCR_0,SCR_SPACE,SCR_ANKH,SCR_0,SCR_SPACE,SCR_SPACE,SCR_SPACE,SCR_SPACE
@@ -1231,11 +1230,9 @@ charadr_end:
 
 projch:	.byte SCR_PROJ_Y,SCR_PROJ_X,SCR_PROJ_Y,SCR_PROJ_X
 
-mul3:	.byte 0,3,6,9
-
-	.if ZAP
 wdsa:	.byte "WDSA"
-	.endif
+
+titlec:	.byte COLOR_RED,COLOR_YELLOW	; title colors
 
 	.segment "CHARS"
 
@@ -1261,7 +1258,7 @@ _snake: .byte $93,$8e,$81,$8b,$85,$00							; SNAKE
 _orc:   .byte $8f,$92,$83,$00								; ORC
 _undead:.byte $95,$8e,$84,$85,$81,$84,$00						; UNDEAD
 _stalke:.byte $93,$94,$81,$8c,$8b,$85,$92,$00						; STALKER
-_wizard:.byte $97,$89,$9a,$81,$92,$84,$00						; WIZARD
+_wizard:.byte $8d,$81,$87,$85,$00							; MAGE
 _slime: .byte $93,$8c,$89,$8d,$85,$00							; SLIME
 _demon: .byte $84,$85,$8d,$8f,$8e,$00							; DEMON
 
@@ -1314,4 +1311,4 @@ themes:	.byte $33,$33,$33,$33,$61,$33,$52,$33,$33,$61,$22,$33,$33,$57,$41	; hi=w
 
 	; colors: 0=black, 1=white, 2=red, 3=cyan, 4=purple, 5=green, 6=blue, 7=yellow
 
-titlec:	.byte COLOR_RED,COLOR_YELLOW	; title colors
+mul3:	.byte 0,3,6,9
