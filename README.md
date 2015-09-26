@@ -14,9 +14,9 @@ Use W,A,S,D keys to move. Attack by walking on enemies. Items are automatically 
 Items that you have picked up can be used by pressing the following keys:
 
 F1 - use potion  
-F3 - use gem  
-F5 - use scroll  
-F7 - use ankh  
+F3 - use gem (F2 in the Javascript version)  
+F5 - use scroll (F3 in the Javascript version)  
+F7 - use ankh (F4 in the Javascript version)  
 Z  - use staff  
 
 ### What do the symbols on the screen mean?
