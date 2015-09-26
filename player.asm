@@ -39,7 +39,11 @@ use_potion:
 	jmp print_msg		; jsr + rts
 
 use_gem:
+	.if ALT_FUNC_KEYS
+	cmp #CHR_F2
+	.else
 	cmp #CHR_F3
+	.endif
 	bne use_scroll
 	lda #1
 	jsr use_item
@@ -84,7 +88,11 @@ use_gem:
 rts1:	rts
 
 use_scroll:
+	.if ALT_FUNC_KEYS
+	cmp #CHR_F3
+	.else
 	cmp #CHR_F5
+	.endif
 	bne use_skull
 	lda #2
 	jsr use_item
@@ -116,7 +124,11 @@ use_scroll:
 	jmp print_msg		; jsr + rts
 
 use_skull:
+	.if ALT_FUNC_KEYS
+	cmp #CHR_F4
+	.else
 	cmp #CHR_F7
+	.endif
 	bne zap
 	lda #3
 	jsr use_item

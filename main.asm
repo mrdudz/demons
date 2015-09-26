@@ -24,6 +24,7 @@ SECRET_DOOR	= 7		; secret door probability after stalker level
 STAFF_CHARGES	= 25
 DEBUG		= 0		; set to 0 to strip debug code
 MUSIC		= 1
+ALT_FUNC_KEYS	= 0		; (for playing on PC keyboard) use F1-F4 instead of F1,F3,F5,F7 
 
 ; levels
 START_LEVEL	= 0
@@ -53,9 +54,13 @@ CHR_RIGHT	= 29
 CHR_HOME	= 19
 CHR_CLR_HOME	= 147
 CHR_F1		= 133
+CHR_F2		= 137
 CHR_F3		= 134
+CHR_F4		= 138
 CHR_F5		= 135
+CHR_F6		= 139
 CHR_F7		= 136
+CHR_F8		= 140
 
 ; screen codes
 SCR_BASE	= 41
