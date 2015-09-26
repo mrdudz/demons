@@ -31,15 +31,15 @@ Monsters are depicted by letters. There are also other symbols not listed here, 
 
 ### Treasures of Dex
 
-During your adventure you may find treasures which can be used during your quest. Some of them are dropped by monsters, some you will have to find!
+During your adventure you may find treasures which can be used by pressing a key. Some of them are dropped by monsters, some you will have to find!
 
 **Potion (F1):** These are depicted by red '!' symbols. Drink a potion to heal your wounds by pressing F1.
 
-**Gem (F3):** These rare precious stones have magical powers. If you are lucky to find a gem (depicted by a green diamond symbol), you can use its magical powers by pressing F3.
+**Gem (F3):** These rare precious stones have magical powers. If you are lucky to find a gem (depicted by a green diamond symbol), you can use its magical powers by pressing F3 (F2 on Javascript emulator version).
 
-**Scroll (F5):** The scrolls with arcane words written on them have been created by evil mages lurking in the deepest chambers of Dex. A scroll looks like a purple '?' symbol on the screen. You can unleash the spells stored in them by pressing F5.
+**Scroll (F5):** The scrolls with arcane words written on them have been created by evil mages lurking in the deepest chambers of Dex. A scroll looks like a purple '?' symbol on the screen. You can unleash the spells stored in them by pressing F5 (F3 on Javascript emulator version).
 
-**Ankh (F7):** The demons of Dex have stolen the holy ankhs of the circle. The ankhs are really rare, but if you manage to recover one, you can unleash its destructive powers by pressing F7.
+**Ankh (F7):** The demons of Dex have stolen the holy ankhs of the circle. The ankhs are really rare, but if you manage to recover one, you can unleash its destructive powers by pressing F7 (F4 on Javascript emulator version).
 
 **Staff (Z):** Only the one possessing this magical artifact can become the new arch druid. It is a truly powerful item and you may use its powers by pressing the Z key. Beware, even its powers may be limited.
 
